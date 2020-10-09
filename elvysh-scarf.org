@@ -1,0 +1,72 @@
+# TODO title
+* S High level executive summary
+* Deep dive into Elvysh
+** M Problem description and connection to prior work
+** L The core theoretical model
+** L Core technical components/architecture implementing the model
+** M Potential applications (general, not Scarf specific)
+** S Engineering standards/technical philosophy of the implementation
+* Scarf porcelain
+** S Why Elvysh is the right basis for Scarf's tooling
++ Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
++ Give OSS authors enough leverage over their own code to meaningfully charge the companies that rely on it
++ Provide a commercial platform for OSS delivery to commercial users, by offering native payments, paid licensing, premium feature delivery, etc
++ Provide a unified package management experience across different systems
++ Align dev tools around maintainers
+** S Why scarf is good for elvysh
+** M Potential functionality and use cases of frontend(s)
+** M Expected user knowledge/background for various use cases
+(incl setup/config)
+** M Expected interface with Elvysh core
+** M Accompanying infrastructure
+* Project plan
+** L Roadmap with technical and functional milestones
+Nixpkgs compat:
+  Add files
+    direct add to store
+    Builtin drvs
+    recursive vs flat
+  References
+  Run drvs
+    Basic execution
+    Funky special features
+    Serialize drvs
+    Intensional?
+    Recursive?
+    Remote?
+    Substitution?
+  GC
+  nixexpr interface
+    Basic eval
+    String context
+    path
+    derivationStrict
+    funky builtins?
+    Interface to other stores?
+  nixenv/profile interface
+    GC connected to profile dirs
+Haskell
+  Individual module
+  Whole package
+  Deps?
+  nix bidi interaction
+Interface
+  C
+  Rust
+  Haskell
+Documentation
+  Reference/protocols
+  Tutorials
+  Cookbook/how-to
+Formal modelling
+Portability?
+** L Detailed review of each phase
+** L Timelines
+** S Opportunities for parallelism/team work
+** M Proposal for messaging/marketing to existing Nix and developer tool communities
+** M Expected limitations of each milestone and the completed initial product
+** S Future opportunities
+* S Proposed terms of employment
+
+
+7S, 8M, 5L
