@@ -1,7 +1,23 @@
 # TODO title
 * S High level executive summary
 * Deep dive into Elvysh
+#+BEGIN_QUOTE
+There are only two hard things in Computer Science: cache invalidation and naming things.
+
+  ---Phil Karlton
+#+END_QUOTE
 ** M Problem description and connection to prior work
+A business analyst runs a script provided by one of the engineers and gets an error message: "ImportError: No module named psycopg2"
+
+There's a tricky bug in the last step of a complex, non-parallel pipeline that runs daily on the big compute cluster. The developer thinks they have found a fix, and kicks off the full pipeline locally to test it overnight. They disable the next morning's run because the fix won't be validated in time.
+
+A QA tester spins up the latest version of the microservice in their testing environment. Their first simple attempt at using the new feature fails with the error "ERROR: type "json" does not exist". They send a grumpy email to the dev team telling them to do some basic sanity checking before wasting their time.
+
+These domains are very different, and the concrete solution to these problems will seem unrelated. But the problem in each case can be seen as an instance of the same general issue: The system cannot effectively substitute an appropriate resource based on its name. In the import error, python doesn't have "psycopg2" locally and doesn't know how to get it, so it can't instantiate the module that was imported. In the overnight test, the system /does/ know how to get "the input to the final step", but it doesn't know (or can't safely take advantage of the fact) that the requested inputs are the same as were already computed in that day's prod run. The failing QA tester's environment /thinks/ it knows how to resolve the "postgresql" dependency of the microservice, but the postgres instance it provides is too old.
+
+Naming and substitution are, of course, ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables [fn:linker]. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. These operations are mostly domain-specific, but there *are* conceptual commonalities between them. Currently, these commonalities are rarely taken advantage of within a given system; just as any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp, so too do most of these systems contain ad hoc, informally-specified, bug-ridden, slow implementations of half of what naming and substitution could be. Moreover, many of these systems overlap (compilers can get their modules from packages given by a package manager), but the meanings of their names and the implementation of their substitutions are usually only accidentally composable, if at all.
+
+[fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 ** L The core theoretical model
 ** L Core technical components/architecture implementing the model
 ** M Potential applications (general, not Scarf specific)
