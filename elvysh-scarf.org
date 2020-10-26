@@ -18,10 +18,24 @@ These domains are very different, and the concrete solution to these problems wi
 Naming and substitution are, of course, ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables [fn:linker]. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. These operations are mostly domain-specific, but there *are* conceptual commonalities between them. Currently, these commonalities are rarely taken advantage of within a given system; just as any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp, so too do most of these systems contain ad hoc, informally-specified, bug-ridden, slow implementations of half of what naming and substitution could be. Moreover, many of these systems overlap (compilers can get their modules from packages given by a package manager), but the meanings of their names and the implementation of their substitutions are usually only accidentally composable, if at all.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
+*** Prior work
++ CAS (git, IPFS)
++ Nix
++ Unison
++ Nelson
 ** L The core theoretical model
++ Polycategories
+  + Substructural
++ Reductions (laxity)
+  + Nix example(project to output → reduce to outpath)
++ Cut elimination/referential transparency
 ** L Core technical components/architecture implementing the model
 ** M Potential applications (general, not Scarf specific)
 ** S Engineering standards/technical philosophy of the implementation
++ Spec
++ Composable
++ O11Y
++ Verification
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
 + Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
@@ -29,8 +43,10 @@ Naming and substitution are, of course, ubiquitous[fn:church] in computation, an
 + Provide a commercial platform for OSS delivery to commercial users, by offering native payments, paid licensing, premium feature delivery, etc
 + Provide a unified package management experience across different systems
 + Align dev tools around maintainers
++ O11Y → metrics
 ** S Why scarf is good for elvysh
 ** M Potential functionality and use cases of frontend(s)
+*** Match domain-specific tooling
 ** M Expected user knowledge/background for various use cases
 (incl setup/config)
 ** M Expected interface with Elvysh core
