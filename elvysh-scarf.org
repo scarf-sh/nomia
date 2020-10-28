@@ -32,14 +32,23 @@ Naming and substitution are, of course, ubiquitous[fn:church] in computation, an
   + References as un-cut compositions (cut elim/ref trans)
 + Reductions (laxity)
   + Nix example(project to output → reduce to outpath)
++ Caching
+  + Store forwarding
++ Naming
+  + Hashing vs authoritative name server
 ** L Core technical components/architecture implementing the model
++ GC
++ Centralize reductions/per user
 ** M Potential applications (general, not Scarf specific)
++ Cross comp
 ** S Engineering standards/technical philosophy of the implementation
 + Spec
-+ Composable
-+ O11Y
++ Composable (lib/framework)
+  + Mechanism vs policy
++ O11Y (dynamic adjustment)
 + Verification
 + Caps
++ Poly/mono repo, schemas
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
 + Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
@@ -50,6 +59,7 @@ Naming and substitution are, of course, ubiquitous[fn:church] in computation, an
 + O11Y → metrics
 ** S Why scarf is good for elvysh
 ** M Potential functionality and use cases of frontend(s)
++ Command not found/implicit env (w/locking?)
 *** Match domain-specific tooling
 ** M Expected user knowledge/background for various use cases
 (incl setup/config)
