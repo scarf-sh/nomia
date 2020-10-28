@@ -6,8 +6,20 @@ There are only two hard things in Computer Science: cache invalidation and namin
 
   ---Phil Karlton
 #+END_QUOTE
-** Vision
 You're about to start working on a service that you haven't worked on before. You point your editor to the source file you need to work on, and after a slight delay for it to be downloaded for the first time you have it open in front of you. You start modifying the code, and after a minute or two for the library dependencies to be downloaded syntax checking kicks in and points out a typo a few lines above. You save your change and jump over to another file that depends on it (which opens immediately) and start making changes there. At first your editor warns you about undefined references when you mention the new code you added, but after a few seconds for the first module to compile those errors go away. You point your browser to the local service URL and get a page saying that the service is being spun up and showing the progress on that. You notice a DB dump is being loaded and you know that will take a while, so you switch to another project, a compute pipeline. When you enter its environment you notice a huge merge happened overnight, you were up to date with master so you don't have any conflicts but you're not sure if the merge impacted the parts of the codebase you care about. A colleague recommends you try out Meld to review the diff, you run a command to launch it and (after a minute of downloading, since you've never used it before) the window pops open and you confirm the merge was fine. You're testing out an algorithm tweak that should only impact a small portion of the parallel work units of the pipeline, after you finish implementation you kick off a run of the pipeline expected to be the same as that day's daily prod run except with just your changes in place, dry-running first to validate that only a small subset of the job is impacted. While that's running, you switch back to your browser and see the service is loaded, so you check your work and, satisfied, open a PR, which triggers an automention of the QA team with a URL to test out. You notice the pipeline run isn't quite done, so you turn off your computer and head out to lunch. When you get back, you see that the QA team reviewed your fix and it looks good and that the pipeline run is done, so you merge your changes to the first project and open up a comparison of the real prod run's results with your test run. After confirming the new results seem better, you open a PR with your proposed changes and head home.
+
+To some of you, this may sound like a utopian dream. To others, a secret nightmare where all of the magic and implicit assumptions will inevitably cause a catastrophic break or, worse, subtle bugs missed until it's too late. A lucky few might have some subset of this available in some form in their domain. No one has it all... yet.
+
+The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With elvysh, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Read on to find out how.
+** Names and substitution
+Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
+
+These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Most of the time, however, the required functionality is reimplemented from scratch every time, 
+
+These operations are mostly domain-specific, but there *are* conceptual commonalities between them. Currently, these commonalities are rarely taken advantage of within a given system; just as any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp, so too do most of these systems contain ad hoc, informally-specified, bug-ridden, slow implementations of half of what naming and substitution could be. Moreover, many of these systems overlap (compilers can get their modules from packages given by a package manager), but the meanings of their names and the implementation of their substitutions are usually only accidentally composable, if at all.
+
+[fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
+[fn:hope] We hope!
 ** M Problem description and connection to prior work
 A business analyst runs a script provided by one of the engineers and gets an error message: "ImportError: No module named psycopg2"
 
@@ -17,9 +29,9 @@ A QA tester spins up the latest version of the microservice in their testing env
 
 These domains are very different, and the concrete solution to these problems will seem unrelated. But the problem in each case can be seen as an instance of the same general issue: The system cannot effectively substitute an appropriate resource based on its name. In the import error, python doesn't have "psycopg2" locally and doesn't know how to get it, so it can't instantiate the module that was imported. In the overnight test, the system /does/ know how to get "the input to the final step", but it doesn't know (or can't safely take advantage of the fact) that the requested inputs are the same as were already computed in that day's prod run. The failing QA tester's environment /thinks/ it knows how to resolve the "postgresql" dependency of the microservice, but the postgres instance it provides is too old.
 
-Naming and substitution are, of course, ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables [fn:linker]. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. These operations are mostly domain-specific, but there *are* conceptual commonalities between them. Currently, these commonalities are rarely taken advantage of within a given system; just as any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp, so too do most of these systems contain ad hoc, informally-specified, bug-ridden, slow implementations of half of what naming and substitution could be. Moreover, many of these systems overlap (compilers can get their modules from packages given by a package manager), but the meanings of their names and the implementation of their substitutions are usually only accidentally composable, if at all.
+Naming and substitution are, of course, ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly.
 
-[fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
+
 *** TODO Restructure prev section
 *** Prior work
 + CAS (git, IPFS)
@@ -35,12 +47,17 @@ Naming and substitution are, of course, ubiquitous[fn:church] in computation, an
 + Caching
   + Store forwarding
 + Naming
-  + Hashing vs authoritative name server
+  + Hashing vs authoritative name server, what to hash
 ** L Core technical components/architecture implementing the model
 + GC
 + Centralize reductions/per user
 ** M Potential applications (general, not Scarf specific)
 + Cross comp
++ Modules/functions/computation (Unison)
++ Pipeline
++ Packages
++ Services
++ Compliation
 ** S Engineering standards/technical philosophy of the implementation
 + Spec
 + Composable (lib/framework)
