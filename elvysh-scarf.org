@@ -14,25 +14,12 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 ** Names and substitution
 Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
 
-These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Most of the time, however, the required functionality is reimplemented from scratch every time, 
-
-These operations are mostly domain-specific, but there *are* conceptual commonalities between them. Currently, these commonalities are rarely taken advantage of within a given system; just as any sufficiently complicated program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of Common Lisp, so too do most of these systems contain ad hoc, informally-specified, bug-ridden, slow implementations of half of what naming and substitution could be. Moreover, many of these systems overlap (compilers can get their modules from packages given by a package manager), but the meanings of their names and the implementation of their substitutions are usually only accidentally composable, if at all.
+These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
-** M Problem description and connection to prior work
-A business analyst runs a script provided by one of the engineers and gets an error message: "ImportError: No module named psycopg2"
+*** The Elvysh model
 
-There's a tricky bug in the last step of a complex, non-parallel pipeline that runs daily on the big compute cluster. The developer thinks they have found a fix, and kicks off the full pipeline locally to test it overnight. They disable the next morning's run because the fix won't be validated in time.
-
-A QA tester spins up the latest version of the microservice in their testing environment. Their first simple attempt at using the new feature fails with the error "ERROR: type "json" does not exist". They send a grumpy email to the dev team telling them to do some basic sanity checking before wasting their time.
-
-These domains are very different, and the concrete solution to these problems will seem unrelated. But the problem in each case can be seen as an instance of the same general issue: The system cannot effectively substitute an appropriate resource based on its name. In the import error, python doesn't have "psycopg2" locally and doesn't know how to get it, so it can't instantiate the module that was imported. In the overnight test, the system /does/ know how to get "the input to the final step", but it doesn't know (or can't safely take advantage of the fact) that the requested inputs are the same as were already computed in that day's prod run. The failing QA tester's environment /thinks/ it knows how to resolve the "postgresql" dependency of the microservice, but the postgres instance it provides is too old.
-
-Naming and substitution are, of course, ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly.
-
-
-*** TODO Restructure prev section
 *** Prior work
 + CAS (git, IPFS)
 + Nix
@@ -130,6 +117,7 @@ Portability?
 ** M Expected limitations of each milestone and the completed initial product
 ** S Future opportunities
 * S Proposed terms of employment
-
+** Governance
+Owner's interest, maintainers decisision
 
 7S, 8M, 5L
