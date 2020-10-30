@@ -14,12 +14,48 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 ** Names and substitution
 Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
 
-These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
+These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead for users and developers. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
+
+Elvysh provides that shared conceptual model and implementation.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
-*** The Elvysh model
 
+*** TODO Link to model/impl sections?
+** The elvysh model [fn:cat]
+Elvysh is based off of several core concepts and their interrelations[fn:poly].
+
+[fn:cat] Elvysh's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
+[fn:poly] Many of the concepts come together to form a particular kind of lax 2-polycategory.
+*** Resources
+*Resources* are a very general concept, anything that can be instantiated, used, consumed, etc. A program that prints out "Hello", a website to check the weather, a block of memory containing the result of some computation, a Kafka cluster, and so on can all be considered resources. Resources have *affordances* that are exploited via *capabilities* (or *handles*): reads from memory go via a pointer, the weather page is loaded via a connection, the program is executed via a file descriptor or path within a directory.
+
+Resources have *types*[fn:0-cell]. These might be something general like "an HTTP service" or something more specific like "an immutable regular file". Types determine the affordances of the resource: a regular file can be read from, a program can be executed. Some types are *subtypes* of others, in that affordances of the *supertype* are also exploitable on resources of the subtype. Any (unix) file can have stat(2) called on it, including immutable regular files.
+
+Resource types also determine *equivalence classes*, collections of resources that can be considered "the same" as each other. This is a very domain-specific semantic notion: two equivalent immutable regular files must have the same contents but not necessarily the same inode numbers, and two equivalent web services can vary in number of backing servers or even implementation language so long as they respond to requests in the same way. Note that subtyping does /not/ necessarily preserve equivalence; two "hello" programs that only differ at some padding byte are equivalent /as programs/ but not as regular files. This is in fact one of the use cases for defining a new resource type: if a "package" is a collection of programs, libraries, documentation, etc. that affords installation into an environment, a "cross-agnostic package" might have the same affordances but fail to distinguish packages that are the same except one was compiled natively and the other cross-compiled.
+
+[fn:0-cell] The 0-cells of the polycategory. Note that we do not in general identify a specific resource with some point of the relevant 0-cell, to be explained in the next section.
+*** Names
+A *name*[fn:1-cell] is process that consumes and produces resources. A name has a sequence of *inputs*, which are resource types, such that an appropriate resource for /every/ input must be provided to run the process. A name also has a sequence of *outputs*, also resource types, such that an appropriate resource for /some/ output will be produced when the process runs[fn:multiple]. For example, the name "cat2" might take two inputs that are readable files and have one output, another readable file, corresponding to the concatenation of the inputs. This can be visualized as:
+
+[FIG cat2]
+
+Names must respect resource equivalence, in the sense that 
+
+Names with no inputs and a single output are also called *named resources*[fn:points], since they correspond directly to the resource produced when the name is run.
+
++ Composition
++ Inlining
++ Structural
++ Contextual
++ Caching
++ Forwarding (namespaces?)
+
+[fn:1-cell] The 1-cells of the polycategory.
+[fn:multiple] Note that this is /not/ the same as a function returning multiple values, or Nix's multiple outputs. Only /one/ resource will be produced, whose type will match /one/ of the outputs; to have a single name refer to multiple resources a collection resource type (e.g. a map from output name to resource) can be used.
+[fn:points] /These/ are the points of the relevant 0-cell. Not every resource has a name that fits the requirements of names generally, at least not obviously so, so while every named resource corresponds to some resource the converse isn't true.
+              Much of the time, names will only have a single output.
+**** TODO Figures
 *** Prior work
 + CAS (git, IPFS)
 + Nix
@@ -27,7 +63,7 @@ These domans are, of course, very different. Browsers don't know what a symbol t
 + Nelson
 ** L The core theoretical model
 + Polycategories
-  + Substructural
+  + Substructural (e.g. pipes)
   + References as un-cut compositions (cut elim/ref trans)
 + Reductions (laxity)
   + Nix example(project to output → reduce to outpath)
@@ -35,9 +71,11 @@ These domans are, of course, very different. Browsers don't know what a symbol t
   + Store forwarding
 + Naming
   + Hashing vs authoritative name server, what to hash
++ Indexicality/subindex
 ** L Core technical components/architecture implementing the model
 + GC
 + Centralize reductions/per user
++ Lazy/incomplete
 ** M Potential applications (general, not Scarf specific)
 + Cross comp
 + Modules/functions/computation (Unison)
@@ -45,13 +83,14 @@ These domans are, of course, very different. Browsers don't know what a symbol t
 + Packages
 + Services
 + Compliation
++ Memory map
 ** S Engineering standards/technical philosophy of the implementation
 + Spec
 + Composable (lib/framework)
-  + Mechanism vs policy
+  + Mechanism vs policy (semantic)
 + O11Y (dynamic adjustment)
 + Verification
-+ Caps
++ Caps (resource limits)
 + Poly/mono repo, schemas
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
