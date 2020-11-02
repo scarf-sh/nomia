@@ -20,7 +20,7 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 [fn:hope] We hope!
 ** TODO Link to model/impl sections?
 ** The conceptual model [fn:cat]
-Elvysh is based off of several core concepts and their interrelations[fn:poly]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
+Elvysh models several core concepts and their interrelations[fn:poly]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
 [fn:cat] Elvysh's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
 [fn:poly] Many of the concepts come together to form a particular kind of lax 2-polycategory.
@@ -29,8 +29,22 @@ In your hypothetical work day, you exploited a number of *resources*: The source
 
 The individual resources used can be seen as instances of *resource types*[fn:0-cell]: the piece of the algorithm you modified can be seen as a /pipeline component/, the site the QA team evaluated was a /test web service/. Resource types associate *semantics* to the affordances of their inhabitants, often in terms of abstract *resource state*: an immutable readable file has its /contents/, a (finite) sequence of bytes, and sequential reads of the file return successive portions of those contents. Resource types also induce *equivalence classes* on their resources: Your dry-run of the pipeline confirmed that most of the results of your test run were equivalent (as compute results!) to the corresponding results of the prod run that day. The same resource can be seen as a member of multiple types: Your editor treated the first file you edited as a mutable single-writer regular file, while your compiler may have viewed it as a sequentially readable file. Some types are *subtypes* of others in that a resource of the subtype can also be seen as a resource of the *supertype*, in a way that preserves affordances but not necessarily semantics or equivalence: You can call "stat" on any Unix file and any immutable readable Unix file, but Unix files in general have no notion of contents (think of a socket) and two equivalent immutable readable files may have e.g. different inode numbers and thus be seen as different as Unix files.
 
+Note that resource types and their associated semantics can be very domain-specific. Suppose the compute pipeline is written in C++ and your CI system uses gcc for performance but you prefer clang locally for the better error messages. The object files produced by the two compilers can be quite different, even viewed as object files, and so naïvely the object files compiled by CI after the big merge wouldn't be equivalent to the object files you'd compile locally. But viewed as "object files exporting the right symbols following the right platform ABI based on the relevant headers", they can be considered the same.
+
 [fn:0-cell] The 0-cells of the polycategory. Note that we do not in general identify a specific resource with some point of the relevant 0-cell, in part because there is no 1:1 mapping between a resource and its type and in part for reasons detailed in the next section.
 *** Names
++ first file in project dir
++ library deps
++ other file in project dir
++ module from first file
++ local service
++ db
++ compute pipeline env
++ meld
++ "today's pipeline run against this code"
++ test site for PR
++ "results of real prod run"
++ "results of test run"
 A *name*[fn:1-cell] is process that consumes and produces resources. A name has a sequence of *inputs*, which are resource types, such that an appropriate resource for /every/ input must be provided to run the process. A name also has a sequence of *outputs*, also resource types, such that an appropriate resource for /some/ output will be produced when the process runs[fn:multiple]. For example, the name "cat2" might take two inputs that are readable files and have one output, another readable file, corresponding to the concatenation of the inputs. This can be visualized as:
 
 [FIG cat2]
