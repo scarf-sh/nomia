@@ -6,43 +6,40 @@ There are only two hard things in Computer Science: cache invalidation and namin
 
   ---Phil Karlton
 #+END_QUOTE
-You're about to start working on a service that you haven't worked on before. You point your editor to the source file you need to work on, and after a slight delay for it to be downloaded for the first time you have it open in front of you. You start modifying the code, and after a minute or two for the library dependencies to be downloaded syntax checking kicks in and points out a typo a few lines above. You save your change and jump over to another file that depends on it (which opens immediately) and start making changes there. At first your editor warns you about undefined references when you mention the new code you added, but after a few seconds for the first module to compile those errors go away. You point your browser to the local service URL and get a page saying that the service is being spun up and showing the progress on that. You notice a DB dump is being loaded and you know that will take a while, so you switch to another project, a compute pipeline. When you enter its environment you notice a huge merge happened overnight, you were up to date with master so you don't have any conflicts but you're not sure if the merge impacted the parts of the codebase you care about. A colleague recommends you try out Meld to review the diff, you run a command to launch it and (after a minute of downloading, since you've never used it before) the window pops open and you confirm the merge was fine. You're testing out an algorithm tweak that should only impact a small portion of the parallel work units of the pipeline, after you finish implementation you kick off a run of the pipeline expected to be the same as that day's daily prod run except with just your changes in place, dry-running first to validate that only a small subset of the job is impacted. While that's running, you switch back to your browser and see the service is loaded, so you check your work and, satisfied, open a PR, which triggers an automention of the QA team with a URL to test out. You notice the pipeline run isn't quite done, so you turn off your computer and head out to lunch. When you get back, you see that the QA team reviewed your fix and it looks good and that the pipeline run is done, so you merge your changes to the first project and open up a comparison of the real prod run's results with your test run. After confirming the new results seem better, you open a PR with your proposed changes and head home.
+Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
+
+These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is distinct from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead for users and developers. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
+
+You're about to start working on a service that you haven't worked on before. You point your editor to the source file you need to work on, and after a slight delay for it to be downloaded for the first time you have it open in front of you. You start modifying the code, and after a minute or two for the library dependencies to be downloaded syntax checking kicks in and points out a typo a few lines above. You save your change and jump over to another file that depends on it (which opens immediately) and start making changes there. At first your editor warns you it's not up-to-date but there's an undefined references when you mentionend the new code you added, but after a few seconds for the first module to compile those errors go away. You finish the work and point your browser to the local service URL and get a page saying that the service is being spun up and showing the progress on that. You notice a DB dump is being loaded and you know that will take a while, so you switch to another project, a compute pipeline. When you enter its environment you notice a huge merge happened overnight, you were up to date with master so you don't have any conflicts but you're not sure if the merge impacted the parts of the codebase you care about. A colleague recommends you try out Meld to review the diff, you run a command to launch it and (after a minute of downloading, since you've never used it before) the window pops open and you confirm the merge was fine. You're testing out an algorithm tweak that should only impact a small portion of the parallel work units of the pipeline, after you finish implementation you kick off a run of the pipeline expected to be the same as that day's daily prod run except with just your changes in place, dry-running first to validate that only a small subset of the job is impacted. While that's running, you switch back to your browser and see the service is loaded, so you check your work and, satisfied, open a PR, which triggers an automention of the QA team with a URL to test out. You notice the pipeline run isn't quite done, so you turn off your computer and head out to lunch. When you get back, you see that the QA team reviewed your fix and it looks good and that the pipeline run is done, so you merge your changes to the first project and open up a comparison of the real prod run's results with your test run. After confirming the new results seem better, you open a PR with your proposed changes and head home.
 
 To some of you, this may sound like a utopian dream. To others, a secret nightmare where all of the magic and implicit assumptions will inevitably cause a catastrophic break or, worse, subtle bugs missed until it's too late. A lucky few might have some subset of this available in some form in their domain. No one has it all... yet.
 
-The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With elvysh, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Read on to find out how.
-** Names and substitution
-Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
-
-These domans are, of course, very different. Browsers don't know what a symbol table is, and installing a package is very different from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead for users and developers. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
-
-Elvysh provides that shared conceptual model and implementation.
+The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With appropriate use of names and a common system for substitution, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Elvysh provides the shared conceptual model and common implementation to make it real.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
-
-*** TODO Link to model/impl sections?
-** The elvysh model [fn:cat]
-Elvysh is based off of several core concepts and their interrelations[fn:poly].
+** TODO Link to model/impl sections?
+** The conceptual model [fn:cat]
+Elvysh is based off of several core concepts and their interrelations[fn:poly]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
 [fn:cat] Elvysh's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
 [fn:poly] Many of the concepts come together to form a particular kind of lax 2-polycategory.
 *** Resources
-*Resources* are a very general concept, anything that can be instantiated, used, consumed, etc. A program that prints out "Hello", a website to check the weather, a block of memory containing the result of some computation, a Kafka cluster, and so on can all be considered resources. Resources have *affordances* that are exploited via *capabilities* (or *handles*): reads from memory go via a pointer, the weather page is loaded via a connection, the program is executed via a file descriptor or path within a directory.
+In your hypothetical work day, you exploited a number of *resources*: The source files you edited, the modules you imported, the web service you tested. Your usage took advantage of various *affordances* exposed via *capabilities* (or *handles*): Your shell /executed/ meld via its /path in a directory/, the pipeline run comparison tool used /connections to the respective results tables/ to /read/ in the results (or maybe the results directly afford higher level comparison primitives).
 
-Resources have *types*[fn:0-cell]. These might be something general like "an HTTP service" or something more specific like "an immutable regular file". Types determine the affordances of the resource: a regular file can be read from, a program can be executed. Some types are *subtypes* of others, in that affordances of the *supertype* are also exploitable on resources of the subtype. Any (unix) file can have stat(2) called on it, including immutable regular files.
+The individual resources used can be seen as instances of *resource types*[fn:0-cell]: the piece of the algorithm you modified can be seen as a /pipeline component/, the site the QA team evaluated was a /test web service/. Resource types associate *semantics* to the affordances of their inhabitants, often in terms of abstract *resource state*: an immutable readable file has its /contents/, a (finite) sequence of bytes, and sequential reads of the file return successive portions of those contents. Resource types also induce *equivalence classes* on their resources: Your dry-run of the pipeline confirmed that most of the results of your test run were equivalent (as compute results!) to the corresponding results of the prod run that day. The same resource can be seen as a member of multiple types: Your editor treated the first file you edited as a mutable single-writer regular file, while your compiler may have viewed it as a sequentially readable file. Some types are *subtypes* of others in that a resource of the subtype can also be seen as a resource of the *supertype*, in a way that preserves affordances but not necessarily semantics or equivalence: You can call "stat" on any Unix file and any immutable readable Unix file, but Unix files in general have no notion of contents (think of a socket) and two equivalent immutable readable files may have e.g. different inode numbers and thus be seen as different as Unix files.
 
-Resource types also determine *equivalence classes*, collections of resources that can be considered "the same" as each other. This is a very domain-specific semantic notion: two equivalent immutable regular files must have the same contents but not necessarily the same inode numbers, and two equivalent web services can vary in number of backing servers or even implementation language so long as they respond to requests in the same way. Note that subtyping does /not/ necessarily preserve equivalence; two "hello" programs that only differ at some padding byte are equivalent /as programs/ but not as regular files. This is in fact one of the use cases for defining a new resource type: if a "package" is a collection of programs, libraries, documentation, etc. that affords installation into an environment, a "cross-agnostic package" might have the same affordances but fail to distinguish packages that are the same except one was compiled natively and the other cross-compiled.
-
-[fn:0-cell] The 0-cells of the polycategory. Note that we do not in general identify a specific resource with some point of the relevant 0-cell, to be explained in the next section.
+[fn:0-cell] The 0-cells of the polycategory. Note that we do not in general identify a specific resource with some point of the relevant 0-cell, in part because there is no 1:1 mapping between a resource and its type and in part for reasons detailed in the next section.
 *** Names
 A *name*[fn:1-cell] is process that consumes and produces resources. A name has a sequence of *inputs*, which are resource types, such that an appropriate resource for /every/ input must be provided to run the process. A name also has a sequence of *outputs*, also resource types, such that an appropriate resource for /some/ output will be produced when the process runs[fn:multiple]. For example, the name "cat2" might take two inputs that are readable files and have one output, another readable file, corresponding to the concatenation of the inputs. This can be visualized as:
 
 [FIG cat2]
 
-Names must respect resource equivalence, in the sense that 
+Names must respect resource equivalence, in the sense that the process must produce an equivalent output when provided equivalent inputs. This may seem overly strict, but recall that equivalence is a type-specific notion. Moreover, names can be *contextual* (or *indexical*), meaning that their output can depend on (some aspect of) the caller's context; there might be a name for "/today's/ featured article on en.wikipedia.org" or "the readable file at file descriptor 0 (stdin) in the current process". This is modelled by a *context* resource type, which can conceptually be instantiated with a (unique) context instance from a caller outside the system or forwarded on (possibly after transformations) within it.
 
-Names with no inputs and a single output are also called *named resources*[fn:points], since they correspond directly to the resource produced when the name is run.
+Names with no inputs and a single output are also called *named resources*[fn:points], since they correspond directly to the (single up to equivalence) resource produced when the name is run.
+
+Names can be sequentially combined via *substitution*[fn:1-comp]. Subject to some constraints, the outputs of some names can be substituted into the inputs of some other names, resulting in a new *substituted name*. 
 
 + Composition
 + Inlining
@@ -50,15 +47,18 @@ Names with no inputs and a single output are also called *named resources*[fn:po
 + Contextual
 + Caching
 + Forwarding (namespaces?)
++ dep/codep fotnote
 
 [fn:1-cell] The 1-cells of the polycategory.
 [fn:multiple] Note that this is /not/ the same as a function returning multiple values, or Nix's multiple outputs. Only /one/ resource will be produced, whose type will match /one/ of the outputs; to have a single name refer to multiple resources a collection resource type (e.g. a map from output name to resource) can be used.
 [fn:points] /These/ are the points of the relevant 0-cell. Not every resource has a name that fits the requirements of names generally, at least not obviously so, so while every named resource corresponds to some resource the converse isn't true.
+[fn:1-comp] This is polycomposition of the 1-cells.
               Much of the time, names will only have a single output.
 **** TODO Figures
 *** Prior work
 + CAS (git, IPFS)
 + Nix
+  + Enforcement note
 + Unison
 + Nelson
 ** L The core theoretical model
@@ -76,12 +76,15 @@ Names with no inputs and a single output are also called *named resources*[fn:po
 + GC
 + Centralize reductions/per user
 + Lazy/incomplete
++ Value-like resources
++ Pull/push
 ** M Potential applications (general, not Scarf specific)
 + Cross comp
 + Modules/functions/computation (Unison)
 + Pipeline
 + Packages
 + Services
+  + Restart vs reconfig
 + Compliation
 + Memory map
 ** S Engineering standards/technical philosophy of the implementation
@@ -92,6 +95,7 @@ Names with no inputs and a single output are also called *named resources*[fn:po
 + Verification
 + Caps (resource limits)
 + Poly/mono repo, schemas
++ flags
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
 + Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
