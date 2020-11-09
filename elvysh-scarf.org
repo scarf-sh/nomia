@@ -19,6 +19,7 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
 ** TODO Link to model/impl sections?
++ Subtypes for structured editing?
 ** The conceptual model [fn:cat]
 Elvysh models several core concepts and their interrelations[fn:poly]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
@@ -37,7 +38,9 @@ Each of the resources you utilized were referenced by a *name*[fn:1-cell]: "meld
 
 [FIG]
 
-Names must be *deterministic*, in the sense that the process must produce an equivalent output when provided equivalent inputs. This may seem to make them too strict to be useful, but there are two mitigating factors. First, recall that equivalence is a domain-specific notion; depending on how high level the output type equivalence is the name may have quite a bit of leeway in exactly how it instantiates the desired resource. Moreover, names can be *contextual* (or *indexical*), meaning that their output can depend on (some aspect of) the caller's context; "the results of today's prod pipeline run" depends on what "today" means. This is modelled by a *context* resource type at the input, which can be thought of as "the state of the world from some particular perspective"; it van conceptually be instantiated with a (unique) context instance from a caller outside the system or forwarded on (possibly after transformations) within it. Because each top-level instantiation is unique, contextual names are essentially unrestricted with respect to determinism, so long as the lack of determinism can be captured in the context.
+Resource subtyping and containment can be captured in *conversions*, names that map a single input to a single output and are either operationally noops (*coercions*) or cheaply provide access to some aspect of the whole (*projections*). The server compliation process coerced the writeable file your editor was using to a readable stream to generate a bundle of both an updated server executable and an updated module, and then when you edited the second file your editor projected out the new module to fix the undefined reference warning.
+
+Names must be *deterministic*, in the sense that the process must produce an equivalent output when provided equivalent inputs. This may seem to make them too strict to be useful, but there are two mitigating factors. First, recall that equivalence is a domain-specific notion; depending on how high level the output type equivalence is the name may have quite a bit of leeway in exactly how it instantiates the desired resource. Moreover, names can be *contextual* (or *indexical*), meaning that their output can depend on (some aspect of) the caller's context; "the results of today's prod pipeline run" depends on what "today" means. This is modelled by a *context* resource type at the input, which can be thought of as "the state of the world from some particular perspective"; it can conceptually be instantiated with a (unique) context instance from a caller outside the system or forwarded on (possibly after transformations) within it. Because each top-level instantiation is unique, contextual names are essentially unrestricted with respect to determinism, so long as the lack of determinism can be captured in the context.
 
 Names with an empty list of inputs are called *named resources*[fn:points], since they correspond directly to the (single up to equivalence) resource produced when the name is run.
 
@@ -51,30 +54,52 @@ Which as a whole can be seen as new contextual name taking a config file as an i
 
 Names are *referentially transparent*[fn:cut-elim], in that we can replace a substitution by "inlining" the result resource rather than referencing it and get the same output (this follows from determinism).
 
+Because of determinism, using names forces us to say exactly what we mean. Domain-specificity and contextuality /allow/ us to say exactly what we mean, and no stricter, especially if the context is access via fine-grained projections. Together, this gives us an expressive specification that lets us rely on names and know what to expect with the resulting resources, across domains, modulo implementation bugs. Determinism also allows for efficient resource instantiation: If we can cheaply determine that the inputs are all equivalent to some previous instantiation (here or elsewhere), we can safely reuse the previous result, and to the extent that contextuality doesn't tie us to a specific machine we can safely distribute the work to other systems and take the result back when done. For named resources in particular, since the inputs are always vacuously equivalent we can aggressively cache and distribute them.
+
 [fn:1-cell] The multi 1-cells of the multicategory.
 [fn:domcod] The domain and codomain of the 1-cells. Note that this could in principle be independently extended to a polycategory by allowing names to produce one of a collection of outputs, to a dependent multicategory by allowing the output type to depend on the specific input resources provided, or to a codependent multicategory by allowing the inputs to vary depending on how the output is used, but there is currently no known practical use case for those.
 [fn:points] /These/ are the points of the relevant 0-cell. Not every resource has a name that fits the requirements of names generally, at least not obviously so, so while every named resource corresponds to some resource the converse isn't true.
 [fn:1-comp] This is multicomposition of the 1-cells.
 [fn:cut-elim] This is "cut elimination"/admissability of multicomposition
-**** Structural rules
+
+**** Technical note: Structural rules
 The rules for names given so far imply very strict resource management: Every input resource must be used, exactly once, in order. There are some cases where this is necessary for correctness. Consider the case where a name depends on three input streams that gets instantiated with three pipes each filled sequentially by the same process; the first pipe must be completely read from before the process will start filling the second one, so the name must consume it first, and the data streams can be arbitrarily long so they cannot in general be duplicated. In most cases, however, we can relax this through any combination of the following three operations, called *structural rules*:
 
 [FIG]
 
 *Weakening* lets you ignore some input: the new input wire is a "dummy" that doesn't go anywhere in the original name. *Contracting* lets you duplicate some input: the single wire copies[fn:ref] the resource it's instantiated with and sends one copy over each relevant wire in the original name. *Exchanging*, visualized by crossing wires, lets you reorder inputs: the input on the new left wire is forwarded on to the original right wire etc.
 
-By default, all inputs and outputs are eligible for all three rules. On a case by case basis we can conceptually annotate given inputs or outputs with *restrictions*. Marking an output as *relevant* indicates that the result must be used and thus can't be connected to an input wire created through weakening; marking an input as relevant indicates that the name does in fact use that input. Marking an output as *affine* indicates that the result can't be copied and thus can't be connected to an input wire covering a contraction; marking an input as affine indicates that the name does not duplicate that input. Marking an output as *ordered* indicates that nothing before it can be used once it's used (if ever) and it can't be used once something after has been used and thus can't be connect to an exchanged input wire; marking an input as ordered indicates that the name does not reorder resources around that input[fn:one-sided].
+By default, all inputs and outputs are eligible for all three rules. On a case by case basis we can conceptually annotate given inputs or outputs with *substructural restrictions*. Marking an output as *relevant* indicates that the result must be used and thus can't be connected to an input wire created through weakening; marking an input as relevant indicates that the name does in fact use that input. Marking an output as *affine* indicates that the result can't be copied[fn:proj] and thus can't be connected to an input wire covering a contraction; marking an input as affine indicates that the name does not duplicate that input. Marking an output as *ordered* indicates that nothing before it can be used once it's used (if ever) and it can't be used once something after has been used and thus can't be connect to an exchanged input wire; marking an input as ordered indicates that the name does not reorder resources around that input[fn:one-sided].
 
 In addition to ensuring correctness in rare cases, these annotations can also be used for optimization. If an input is marked relevant, the caller (or general substitution mechanism) might eagerly prepare the resource for consumption (e.g. starting a socket-activated service) rather than waiting for it to be used, since it will eventually. If an input is marked affine, the caller might garbage collect the resource once it's used. If it's marked ordered, all resources before the input in question can be discarded/preparations stopped once the input is used, and the input itself discarded once something after it is.
 
 [fn:ref] Often by reference!
 [fn:one-sided] In principle we could restrict exchange in only one direction, resulting in a one-way "barrier" to reorders.
+[fn:proj] There are some subtleties with bundles of affine resources. We want to be able to project out each of the bundled resources, not only one, but each only once. Categorically, I think this should follow from the functoriality of whatever tensor we're using for bundling, but I haven't yet worked out the details in a multicategory.
 **** TODO figures
-+ Caching
-+ Forwarding (namespaces?)
-+ projectiosn?
 *** Reductions
+We've already seen how the properties of names allow for efficient resource instantiation and combination. Unfortunately, the efficiency ultimately relies on identifying equivalent inputs, which is not always cheap and sometimes impossible. Consider the compute pipeline. A "run of the pipeline" might depend on the entire pipeline package and then project out the executable for each stage. Since you've changed one module in the pipeline, the whole package has changed. If your change only impacts, say, the last stage of the pipeline, the individual stages might be able to recognize that their executables are unchanged. But after the first stage, this recognition wouldn't result in reuse: the first stage may have output cached results, but other stages may not be able to cheaply detect that the output is the same and so would have to rerun. *Reductions*[fn:2-cell] allow us to convey this kind of information by relating one name to another; once we know that "build the project and project out the first executable" reduces to "this particular named executable resource", we can apply our caching logic to the entire composed chain without ever running any particular unchanged stage:
 
+[FIG]
+
+Reductions can be chained together[fn:vert]: If name A reduces to name B and name B reduces to name C, we have a reduction from A to C. Reductions also compose with substitutions[fn:horiz]:
+
+[FIG]
+
+Reductions can change the input requirements; we can drop, duplicate, or rearrange wires[fn:red-struct] so long as we respect substructral restrictions[fn:red-substruct]. Reductions can also *downcast* output types into a more specific type, if we know that the output in the specific cases we've isolated will actually be the right kind of resource. Together, these capabilities allow us to flexibly build names that reuse other names for their work and make that reuse visible to the system as a whole. For example, we could build a TTL cache combinator that takes some name and produces a new name that takes all the same inputs plus the current time and cache state, and either reduces to some named resource if we've run this name recently enough or reduces to the underlying name with the remaining inputs if we haven't (and captures the result for next time)[fn:ml]. Or all of our names that deal with files could delegate the actual file storage to some content-based names and downcast the results to an appropriate specific kind of file, allowing us to identify two different names that result in a file with the same contents as being the same.
+
+The rules reductions must follow are tedious to state in detail, but they all follow from an intuitive notion of being "well-behaved". Reductions must preserve determinism, for example, and the order that we compose reductions and substitutions in doesn't matter. We also have the expected cancellations: downcasting followed by coercing back to the more general type reduces to not having touched the relevant output in the first place.
+
+[fn:2-cell] The (mono) 2-cells.
+[fn:vert] Vertical composition
+[fn:horiz] Horizontal composition
+[fn:red-struct] In fact, our structural operations come with the obvious reductions
+[fn:red-substruct] In particular, we can't drop a relevant wire unless we already used the resource before identifying/following the reduction, we can't retain an affine wire unless we haven't used it before identifying/following the reduction, and the evident but verbose rules for ordered wires apply as well.
+[fn:ml] Note that this could be arbitrarily complex; we could e.g. have some ML-based "fuzzy matching" on the inputs and an extra model state input, if we have some learned notion of when results are going to be "close enough" based on the input closeness.
+*** Namepsaces
+
++ Forwarding
++ Static/subnamespace (e.g. header lookup)
 *** Prior work
 + CAS (git, IPFS)
 + Nix
@@ -98,6 +123,10 @@ In addition to ensuring correctness in rare cases, these annotations can also be
 + Lazy/incomplete
 + Value-like resources
 + Pull/push
++ Provisional results
++ Scheduler/resource optimization/global optimization
++ Priority queue caps
++ Well-known projections
 ** M Potential applications (general, not Scarf specific)
 + Cross comp
 + Modules/functions/computation (Unison)
@@ -107,6 +136,7 @@ In addition to ensuring correctness in rare cases, these annotations can also be
   + Restart vs reconfig
 + Compliation
 + Memory map
++ Secrets capabilitial
 ** S Engineering standards/technical philosophy of the implementation
 + Spec
 + Composable (lib/framework)
@@ -116,6 +146,7 @@ In addition to ensuring correctness in rare cases, these annotations can also be
 + Caps (resource limits)
 + Poly/mono repo, schemas
 + flags
++ Protocol enhancement
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
 + Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
