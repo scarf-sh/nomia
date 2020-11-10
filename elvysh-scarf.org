@@ -1,3 +1,6 @@
+#+OPTIONS: H:5
+#+OPTIONS: toc:nil
+
 # TODO title
 * S High level executive summary
 * Deep dive into Elvysh
@@ -20,8 +23,8 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 [fn:hope] We hope!
 ** TODO Link to model/impl sections?
 + Subtypes for structured editing?
-** The conceptual model [fn:cat]
-Elvysh models several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
+** The conceptual model
+Elvysh models[fn:cat] several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
 [fn:cat] Elvysh's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
 [fn:mon] Many of the concepts come together to form a particular kind of monoidal 2-category
@@ -56,6 +59,8 @@ Resource subtyping can be captured in *coercions* (or *upcasts*), names that map
 
 Because of determinism, using names forces us to say exactly what we mean. Domain-specificity and contextuality /allow/ us to say exactly what we mean, and no stricter, especially if the contextual inputs are fine-grained. Together, this gives us an expressive specification that lets us rely on names and know what to expect with the resulting resources, across domains, modulo implementation bugs. Determinism also allows for efficient resource instantiation: If we can cheaply determine that the inputs are all equivalent to some previous instantiation (here or elsewhere), we can safely reuse the previous result, and to the extent that contextuality doesn't tie us to a specific machine we can safely distribute the work to other systems and take the result back when done. For named resources in particular, since the inputs are always vacuously equivalent we can aggressively cache and distribute them.
 
+Many names can themselves be cheaply compared for equality. This allows for composed names to be subject to caching without necessarily running intermediate names or even instantiating their results from a cache, since if we know the top-level inputs are equivalent and each name in the chain is equivalent we know the outputs will be equivalent.
+
 [fn:1-cell] The 1-cells of the category.
 [fn:domcod] The domain and codomain of the 1-cells. Note that this could in principle be independently extended to a dependent multicategory by allowing the output types to depend on the specific input resources provided or to a codependent multicategory by allowing the inputs to vary depending on how the outputs are used, but there is currently no known practical use case for those.
 [fn:points] /These/ are the points of the relevant 0-cell. Not every resource has a name that fits the requirements of names generally, at least not obviously so, so while every named resource corresponds to some resource the converse isn't true.
@@ -63,6 +68,7 @@ Because of determinism, using names forces us to say exactly what we mean. Domai
 [fn:cut-elim] This is "cut elimination" of the underlying multicategory
 
 **** Technical note: Structural rules
+
 The rules for names given so far imply very strict resource management: Every resource must be used, exactly once, in order. There are some cases where this is necessary for correctness. Consider the case where a name depends on three input streams that gets instantiated with three pipes each filled sequentially by the same process; the first pipe must be completely read from before the process will start filling the second one, so the name must consume it first, and the data streams can be arbitrarily long so they cannot in general be duplicated. In most cases, however, we can relax this through any combination of the following three schemes for *structural names*:
 
 [FIG]
@@ -81,7 +87,7 @@ We've already seen how the properties of names allow for efficient resource inst
 
 [FIG]
 
-Reductions compose with each other, including across substitutions and projections[fn:2-comp]. For example, if we have:
+Reductions compose with each other, including across substitutions and projections[fn:2-comp]; they can be thought of as substitutions at the name level. For example, if we have:
 
 [FIG]
 
@@ -89,37 +95,25 @@ Then we get a composite reduction:
 
 [FIG]
 
-Reductions can effectively change the input requirements; we can drop, duplicate, or rearrange wires so long as we respect substructral restrictions[fn:red-substruct]. Reductions can also *downcast* output types into a more specific type, if we know that the output in the specific cases we've isolated will actually be the right kind of resource. Together, these capabilities allow us to flexibly build names that reuse other names for their work and make that reuse visible to the system as a whole. For example, we could build a TTL cache combinator that takes some name and produces a new name that takes all the same inputs plus the current time and cache state, and either reduces to some named resources (weakening the remaining inputs) if we've run this name recently enough or reduces to the underlying name with the remaining inputs if we haven't (and captures the result for next time)[fn:ml]. Or all of our names that deal with files could delegate the actual file storage to some content-based names and downcast the results to an appropriate specific kind of file, allowing us to identify two different names that result in a file with the same contents as being the same.
+Reductions must preserve determinism. Some trivial reductions come automatically: Any depth of nested substitutions reduces to a substitution where everything is simultaneous[fn:lax], contraction followed by weakening on one of the outputs cancels out to a noop, and a sequence of exchanges that leaves you back where you started cancels. Others are domain-specific, letting you express how your names relate to other names.
 
-Reductions must preserve determinism. Some trivial reductions come automatically: Any depth of nested substitutions reduces to a substitution where everything is simultaneous[fn:lax], contraction followed by weakening on one of the outputs cancels out to a noop, and a sequence of exchanges that leaves you back where you started cancels. The rest are domain specific.
+Reductions can be determined a priori, just based on the name, or can be identified while the name is being run; a compilation name might run the compilation to completion and then reduce itself to a content-addressed name for the resultant file.
+
+Reductions can effectively change the input requirements; we can drop, duplicate, or rearrange wires so long as we respect substructral restrictions[fn:red-substruct]. Reductions can also *downcast* output types into a more specific type, if we know that the output in the specific cases we've isolated will actually be the right kind of resource. Together, these capabilities allow us to flexibly build names that reuse other names for their work and make that reuse visible to the system as a whole. For example, we could build a TTL cache combinator that takes some name and produces a new name that takes all the same inputs plus the current time and cache state, and either reduces to some named resources (weakening the remaining inputs) if we've run this name recently enough or reduces to the underlying name with the remaining inputs if we haven't (and captures the result for next time)[fn:ml]. Or all of our names that deal with files could delegate the actual file storage to some content-based names and downcast the results to an appropriate specific kind of file, allowing us to identify two different names that result in a file with the same contents as being the same.
 
 [fn:2-cell] The 2-cells. Note that each hom-category is thin for our purposes, i.e. the only relevant 2-dimensional data is whether a reduction exists in a given direction or not
 [fn:2-comp] (Unbiased) composition of 2-cells, including vertical, horizontal, and tensoring
-[fn:horiz] Horizontal composition and tensoring
+[fn:lax] Thus our 1-composition is lax, not even weak
 [fn:red-substruct] In particular, we can't drop a relevant wire unless we already used the resource before identifying/following the reduction, we can't retain an affine wire unless we haven't used it before identifying/following the reduction, and the evident but verbose rules for ordered wires apply as well.
 [fn:ml] Note that this could be arbitrarily complex; we could e.g. have some ML-based "fuzzy matching" on the inputs and an extra model state input, if we have some learned notion of when results are going to be "close enough" based on the input closeness.
-[fn:lax] Thus our 1-composition is lax, not even weak
 *** Namepsaces
+Implicit in the whole discussion so far is that we are describing an open system: you can freely add new resource types, new names, new reductions, so long as they meet the requirements. Unfortunately, proving or enforcing those requirements is in general infeasible. As a result, the system as a whole is conceptually partitioned into multiple *namespaces*, each of which has control over the names and reductions within it but cannot influence names in namespaces that don't (transitively) reference it. You may have set up a namespace for managing your local project checkouts (so you can just tell your editor "open this file in that project"), and that namespace impacts the module compilation that uses the files you edited by determining which files are passed on to the compiler, but outside of names that reference local project names the module compilation namespace is isolated from anything the local project namespace does, including any properties it violates.
 
-+ Forwarding
-+ Static/subnamespace (e.g. header lookup)
-*** Prior work
-+ CAS (git, IPFS)
-+ Nix
-  + Enforcement note
-+ Unison
-+ Nelson
-** L The core theoretical model
-+ Polycategories
-  + Substructural (e.g. pipes)
-  + References as un-cut compositions (cut elim/ref trans)
-+ Reductions (laxity)
-  + Nix example(project to output → reduce to outpath)
-+ Caching
-  + Store forwarding
-+ Naming
-  + Hashing vs authoritative name server, what to hash
-+ Indexicality/subindex
+Namespaces are also the locus of caching, including distributed caching and reductions. Namespaces can keep previous results in a *store* or *forward* results from another namespace (say, on another machine). A namespace can also identify reductions for any of its names.
+
+In order to have caching/reduction for composite names whose substitutions cross namespace boundaries, we need some way to determine which namespace gets to provide the results or identify the substitutions as well as some trusted mechanism for that namespace to do name equality comparisons from different namespaces. For the first issue, we reduce the name to a fully flattened normal form and work backwards from the final outputs, letting the relevant namespace determine if it knows of a reduction or has a cached result for the whole input graph up to that point[fn:anywhere]. For the second issue, we can treat namespaces as a resource type and introduce a *namespace of namespaces*, i.e. a namespace whose names produce namespaces. Then each namespace can have namespaces it trusts to name other namespaces, and confirm with the trusted namespaces that a given name belongs where it claims. This can also be used for overlaying optimization or instrumentation; we might have a namespace of namespaces that says "for any name in the namespaces I expose, I'm first going to check this reduction cache I trust to see if it reduces, and only forward on to the underlying namespace if not", which would among other things allow different users on the same machine to have their own trusted 3rd party caches without requiring mutual trust. This can also be used to bootstrap the system; much like filenames are usually releative to some ambient root or current directory, most names will be relative to some ambient namespace namespace that provides the default set of namespaces for the user or the system.
+
+[fn:anywhere] Technically we could safely allow namespaces to reduce based on what comes /after/ as well. But until a use case arises this allows for a much more straightforward and efficient execution algorithm.
 ** L Core technical components/architecture implementing the model
 + GC
 + Centralize reductions/per user
@@ -130,7 +124,16 @@ Reductions must preserve determinism. Some trivial reductions come automatically
 + Scheduler/resource optimization/global optimization
 + Priority queue caps
 + Well-known projections
++ Naming
+  + Hashing vs authoritative name server, what to hash
 ** M Potential applications (general, not Scarf specific)
+*** Prior work
++ CAS (git, IPFS)
++ Nix
+  + Enforcement note
+  + Reduction for fixed output
++ Unison
++ Nelson
 + Cross comp
 + Modules/functions/computation (Unison)
 + Pipeline
