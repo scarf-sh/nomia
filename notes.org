@@ -1,0 +1,10 @@
+* Ideas to possibly incorporate
++ Subtypes for structured editing
++ Dependencies
++ Name equiv => 2-iso?
++ Subobject/subtype?
++ Resource limits/caps
+* TODO Figures
+* TODO Title
+* TODO Links
+* TODO Review
