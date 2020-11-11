@@ -174,18 +174,15 @@ Elvysh can extend this by:
 By treating services as resources, elvysh can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This share some properties with Nelson, an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
 *** Compute pipelines
 By modelling computation results as resources, individual stages as primitive names, and compute graphs as composed names, we can automatically orchestrate arbitrarily complex compute pipelines with safe caching and reuse. The same computation definition can be easily transformed to run locally threaded in-process or across hundreds of machines. We can capture batch processes or system state in contextual inputs that then reduce to non-contextual ones once accessed, thus automatically sharing work without an a priori notion of what has or hasn't changed.
-** Technical philosophy
+** Engineering standards
+As an aspiring foundational component of nearly every system, it is vital that elvysh be engineered to very high standards. Specific principles include:
 
-** S Engineering standards/technical philosophy of the implementation
-+ Spec
-+ Composable (lib/framework)
-  + Mechanism vs policy (semantic)
-+ O11Y (dynamic adjustment)
-+ Verification
-+ Caps (resource limits)
-+ Poly/mono repo, schemas
-+ flags
-+ Protocol enhancement
++ Specification. The system must have clear precise semantics, library interfaces must be fully documented, formats and protocols spelled out in detail. It should be possible based on specifications alone to reimplement any part of the system compatibly, or even the whole.
++ Composability. The system must be made up of composable primitives that serve a single semantic purpose and can be combined in arbitrary ways so long as the semantics are respected. Wherever possible this applies even across versions; we do not assume everything running was compiled against the same master codebase. Users should be able to build arbitrary domain-specific systems on top of the core that can all interact. Elvysh may include some opinionated "best practice" combinations of components, but cannot assume that those components are always used in that configuration. Elvysh provides mechanism, not policy. Elvysh provides code for reuse wherever possible.
++ Observability. Elvysh's users and developers need to be able to understand the behavior and state of the running system, without reinstrumentation or rebuilding. Elvysh components can build up and emit rich domain-specific structured event information at every step, which can be sampled and correlated across components to aid in debugging, understand user behavior, identify optimization opportunities, etc.
++ Verification. Leveraging as appropriate peer review, testing, fuzzing, formal specification and model checking, formal implementation validation, run-time observation, etc., we want to continually iterate toward ensuring the system is sensibly specified and properly implemented.
++ Security. Elvysh has security built in from the beginning, with clear boundaries between systems, a model assuming mutually untrusted implementations and users, and applying least privilege throughout. Wherever possible based on the underlying system primitives, elvysh uses object capability-style access control, and where not possible it is emulated. In addition to eliminating whole classes of privilege escalation bugs, this makes for a much cleaner programming model when coordinating between many systems.
++ Compatibility. Elvysh is designed for future enhancements wherever possible, and adheres to strict protocol and API versioning to ensure any backwards incompatibilities that must happen are caught early.
 * Scarf porcelain
 ** S Why Elvysh is the right basis for Scarf's tooling
 + Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
