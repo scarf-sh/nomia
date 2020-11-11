@@ -183,16 +183,21 @@ As an aspiring foundational component of nearly every system, it is vital that e
 + Verification. Leveraging as appropriate peer review, testing, fuzzing, formal specification and model checking, formal implementation validation, run-time observation, etc., we want to continually iterate toward ensuring the system is sensibly specified and properly implemented.
 + Security. Elvysh has security built in from the beginning, with clear boundaries between systems, a model assuming mutually untrusted implementations and users, and applying least privilege throughout. Wherever possible based on the underlying system primitives, elvysh uses object capability-style access control, and where not possible it is emulated. In addition to eliminating whole classes of privilege escalation bugs, this makes for a much cleaner programming model when coordinating between many systems.
 + Compatibility. Elvysh is designed for future enhancements wherever possible, and adheres to strict protocol and API versioning to ensure any backwards incompatibilities that must happen are caught early.
-* Scarf porcelain
-** S Why Elvysh is the right basis for Scarf's tooling
-+ Provide a package distribution channel that collected usage statistics for maintainers by default (better-informed maintainers -> better software, enables business decisions around OSS)
-+ Give OSS authors enough leverage over their own code to meaningfully charge the companies that rely on it
-+ Provide a commercial platform for OSS delivery to commercial users, by offering native payments, paid licensing, premium feature delivery, etc
-+ Provide a unified package management experience across different systems
-+ Align dev tools around maintainers
-+ O11Y → metrics
-** S Why scarf is good for elvysh
++ Portability. The core components should work on most platforms, and cross-platform interaction should work smoothly.
+* Scarf tools
+Elvysh alone is not a tool; it has no frontend, just interfaces. Users need some way to actually /use/ the functionality elvysh provides, and Scarf can provide those ways.
+** Why Elvysh and Scarf?
+There is remarkable synergy between elvysh's project goals and Scarf's:
+
++ Elvysh's functionality will incentivize its prospective users to install Scarf's tooling to get access; Scarf's functionality will lead its prospective users into the elvysh ecosystem
++ Elvysh provides a distribution model that can form the basis of Scarf's commercial platform; Scarf's commercial platform will provide the infrastructure and developer incentives to implement the model
++ Elvysh enables a uniform package management experience across ecosystems and platforms; Scarf can bring multiple ecosystems and platforms to the table
++ Elvysh's observability can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide elvysh's development to best meet the goals of its users
++ Elvysh and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
+
+Each project would hugely benefit from the success of the other, and working as one we can drive that success together.
 ** M Potential functionality and use cases of frontend(s)
+
 + Command not found/implicit env (w/locking?)
 *** Match domain-specific tooling
 ** M Expected user knowledge/background for various use cases
