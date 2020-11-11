@@ -112,11 +112,11 @@ Namespaces are also the locus of caching, including distributed caching and redu
 In order to have caching/reduction for composite names whose substitutions cross namespace boundaries, we need some way to determine which namespace gets to provide the results or identify the substitutions as well as some trusted mechanism for that namespace to do name equality comparisons from different namespaces. For the first issue, we reduce the name to a fully flattened normal form and work backwards from the final outputs, letting the relevant namespace determine if it knows of a reduction or has a cached result for the whole input graph up to that point[fn:anywhere]. For the second issue, we can treat namespaces as a resource type and introduce a *namespace of namespaces*, i.e. a namespace whose names produce namespaces. Then each namespace can have namespaces it trusts to name other namespaces, and confirm with the trusted namespaces that a given name belongs where it claims, and include the spelling of the input's namespace in the input's spelling. This can also be used for overlaying optimization or instrumentation; we might have a namespace of namespaces that says "for any name in the namespaces I expose, I'm first going to check this reduction cache I trust to see if it reduces, and only forward on to the underlying namespace if not", which would among other things allow different users on the same machine to have their own trusted 3rd party caches without requiring mutual trust. This can also be used to bootstrap the system; much like filenames are usually releative to some ambient root or current directory, most names will be relative to some ambient namespace namespace that provides the default set of namespaces for the user or the system.
 
 [fn:anywhere] Technically we could safely allow namespaces to reduce based on what comes /after/ as well. But until a use case arises this allows for a much more straightforward and efficient execution algorithm.
-** The implementation
+** TODO The implementation
 Elvysh provides several core components to make this model real:
 
 + *Interfaces* include protocols between namespaces (or between the user and namespaces), 
-** L Core technical components/architecture implementing the model
+** TODO L Core technical components/architecture implementing the model
 + GC
 + Centralize reductions/per user
 + Lazy/incomplete
@@ -174,6 +174,8 @@ Elvysh can extend this by:
 By treating services as resources, elvysh can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This share some properties with Nelson, an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
 *** Compute pipelines
 By modelling computation results as resources, individual stages as primitive names, and compute graphs as composed names, we can automatically orchestrate arbitrarily complex compute pipelines with safe caching and reuse. The same computation definition can be easily transformed to run locally threaded in-process or across hundreds of machines. We can capture batch processes or system state in contextual inputs that then reduce to non-contextual ones once accessed, thus automatically sharing work without an a priori notion of what has or hasn't changed.
+*** Continuous integration
+A specification for continuous integration can be a name that composes all of the relevant projects together, and by combining contextuality and reduction we can capture notions like "the latest version of each dependency" without doing unecessary new work. Test results can be seen as their own resource and potentially named independently of build products, with parallel computation possible if applicable.
 ** Engineering standards
 As an aspiring foundational component of nearly every system, it is vital that elvysh be engineered to very high standards. Specific principles include:
 
@@ -192,7 +194,7 @@ There is remarkable synergy between elvysh's project goals and Scarf's:
 + Elvysh's functionality will incentivize its prospective users to install Scarf's tooling to get access; Scarf's functionality will lead its prospective users into the elvysh ecosystem
 + Elvysh provides a distribution model that can form the basis of Scarf's commercial platform; Scarf's commercial platform will provide the infrastructure and developer incentives to implement the model
 + Elvysh enables a uniform package management experience across ecosystems and platforms; Scarf can bring multiple ecosystems and platforms to the table
-+ Elvysh's observability can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide elvysh's development to best meet the goals of its users
++ Elvysh's observability (or a namespace namespace that repoints URL lookups through Scarf) can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide elvysh's development to best meet the goals of its users
 + Elvysh and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
 
 Each project would hugely benefit from the success of the other, and working as one we can drive that success together.
@@ -216,10 +218,14 @@ In the longer run, ideally we'd have as much of this as possible happen implicit
 + "command not found"-style functionality to automatically fetch a package not yet installed, optionally including it as part of the environment and kept up to date with the rest
 + Background rebuilding, or even the entire CI/CD process, on file save
 + Shell automatically entering the environment for a specific project when opened
-** TODO M Expected user knowledge/background for various use cases
-(incl setup/config)
-** TODO M Expected interface with Elvysh core
-** TODO M Accompanying infrastructure
+** Accompanying infrastructure
+In addition to elvysh itself and the frontends, some additional infrastructure will be needed to fully realize the value:
+
++ Scarf needs some way to capture and analyze the information identified by the frontends
++ Scarf needs a forwarding server if it's going to act as a registry
++ Scarf likely needs a cache, of packages at least
+
+Over time, Scarf could also offer other elvysh-powered services, such as CI or even a PaaS offering.
 * TODO Project plan
 ** L Roadmap with technical and functional milestones
 Nixpkgs compat:
@@ -269,4 +275,4 @@ Portability?
 ** S Future opportunities
 * TODO Proposed terms of employment
 ** TODO Governance
-Owner's interest, maintainers decisision
+Owner's interest, maintainers decision
