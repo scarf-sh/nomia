@@ -1,7 +1,5 @@
 #+OPTIONS: H:5
 #+OPTIONS: toc:nil
-
-# TODO title
 * S High level executive summary
 * Deep dive into Elvysh
 #+BEGIN_QUOTE
@@ -21,8 +19,6 @@ The vision outlined here is not impossible. It's not inherently unreliable, or b
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
-** TODO Link to model/impl sections?
-+ Subtypes for structured editing?
 ** The conceptual model
 Elvysh models[fn:cat] several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
@@ -59,7 +55,10 @@ Resource subtyping can be captured in *coercions* (or *upcasts*), names that map
 
 Because of determinism, using names forces us to say exactly what we mean. Domain-specificity and contextuality /allow/ us to say exactly what we mean, and no stricter, especially if the contextual inputs are fine-grained. Together, this gives us an expressive specification that lets us rely on names and know what to expect with the resulting resources, across domains, modulo implementation bugs. Determinism also allows for efficient resource instantiation: If we can cheaply determine that the inputs are all equivalent to some previous instantiation (here or elsewhere), we can safely reuse the previous result, and to the extent that contextuality doesn't tie us to a specific machine we can safely distribute the work to other systems and take the result back when done. For named resources in particular, since the inputs are always vacuously equivalent we can aggressively cache and distribute them.
 
-Many names can themselves be cheaply compared for equality. This allows for composed names to be subject to caching without necessarily running intermediate names or even instantiating their results from a cache, since if we know the top-level inputs are equivalent and each name in the chain is equivalent we know the outputs will be equivalent.
+Many names can themselves be cheaply compared for equality by being associated with relatively small byte strings, called their *spelling*, with the semantics that any two names which are spelled the same are the same name. This allows for composed names to be subject to caching without necessarily running intermediate names or even instantiating their results from a cache, since if we know the top-level inputs are equivalent and each name in the chain is equivalent we know the outputs will be equivalent. Spellings typically fall into two categories
+
++ *Canonical* spellings are short, descriptive character strings. For example, we might have the string ~$HOME~ spell out a contextual name yielding the caller's home directory.
++ *Hashed* spellings are a cryptographic hash of a serialization of (some function of) the data needed to actually run the name. If we substitute some file spelled ~foo~ into some name that compiles C programs, we might spell the resulting name ~sha256("compile-C C11 ${foo}")~. Hashed spellings can omit or transform some of the data from the input to the hash, so long as the name can be considered the name invariantly under that transformation.
 
 [fn:1-cell] The 1-cells of the category.
 [fn:domcod] The domain and codomain of the 1-cells. Note that this could in principle be independently extended to a dependent multicategory by allowing the output types to depend on the specific input resources provided or to a codependent multicategory by allowing the inputs to vary depending on how the outputs are used, but there is currently no known practical use case for those.
@@ -81,7 +80,6 @@ In addition to ensuring correctness in rare cases, these annotations can also be
 
 [fn:ref] Often by reference!
 [fn:one-sided] In principle we could restrict exchange in only one direction, resulting in a one-way "barrier" to reorders.
-**** TODO figures
 *** Reductions
 We've already seen how the properties of names allow for efficient resource instantiation and combination. Unfortunately, the efficiency ultimately relies on identifying equivalent inputs, which is not always cheap and sometimes impossible. Consider the compute pipeline. A "run of the pipeline" might depend on the entire pipeline package and then project out the executable for each stage. Since you've changed one module in the pipeline, the whole package has changed. If your change only impacts, say, the last stage of the pipeline, the individual stages might be able to recognize that their executables are unchanged. But after the first stage, this recognition wouldn't result in reuse: the first stage may have output cached results, but other stages may not be able to cheaply detect that the output is the same and so would have to rerun. *Reductions*[fn:2-cell] allow us to convey this kind of information by relating one name to another; once we know that "build the project and project out the first executable" reduces to "this particular named executable resource", we can apply our caching logic to the entire composed chain without ever running any particular unchanged stage:
 
@@ -111,9 +109,13 @@ Implicit in the whole discussion so far is that we are describing an open system
 
 Namespaces are also the locus of caching, including distributed caching and reductions. Namespaces can keep previous results in a *store* or *forward* results from another namespace (say, on another machine). A namespace can also identify reductions for any of its names.
 
-In order to have caching/reduction for composite names whose substitutions cross namespace boundaries, we need some way to determine which namespace gets to provide the results or identify the substitutions as well as some trusted mechanism for that namespace to do name equality comparisons from different namespaces. For the first issue, we reduce the name to a fully flattened normal form and work backwards from the final outputs, letting the relevant namespace determine if it knows of a reduction or has a cached result for the whole input graph up to that point[fn:anywhere]. For the second issue, we can treat namespaces as a resource type and introduce a *namespace of namespaces*, i.e. a namespace whose names produce namespaces. Then each namespace can have namespaces it trusts to name other namespaces, and confirm with the trusted namespaces that a given name belongs where it claims. This can also be used for overlaying optimization or instrumentation; we might have a namespace of namespaces that says "for any name in the namespaces I expose, I'm first going to check this reduction cache I trust to see if it reduces, and only forward on to the underlying namespace if not", which would among other things allow different users on the same machine to have their own trusted 3rd party caches without requiring mutual trust. This can also be used to bootstrap the system; much like filenames are usually releative to some ambient root or current directory, most names will be relative to some ambient namespace namespace that provides the default set of namespaces for the user or the system.
+In order to have caching/reduction for composite names whose substitutions cross namespace boundaries, we need some way to determine which namespace gets to provide the results or identify the substitutions as well as some trusted mechanism for that namespace to do name equality comparisons from different namespaces. For the first issue, we reduce the name to a fully flattened normal form and work backwards from the final outputs, letting the relevant namespace determine if it knows of a reduction or has a cached result for the whole input graph up to that point[fn:anywhere]. For the second issue, we can treat namespaces as a resource type and introduce a *namespace of namespaces*, i.e. a namespace whose names produce namespaces. Then each namespace can have namespaces it trusts to name other namespaces, and confirm with the trusted namespaces that a given name belongs where it claims, and include the spelling of the input's namespace in the input's spelling. This can also be used for overlaying optimization or instrumentation; we might have a namespace of namespaces that says "for any name in the namespaces I expose, I'm first going to check this reduction cache I trust to see if it reduces, and only forward on to the underlying namespace if not", which would among other things allow different users on the same machine to have their own trusted 3rd party caches without requiring mutual trust. This can also be used to bootstrap the system; much like filenames are usually releative to some ambient root or current directory, most names will be relative to some ambient namespace namespace that provides the default set of namespaces for the user or the system.
 
 [fn:anywhere] Technically we could safely allow namespaces to reduce based on what comes /after/ as well. But until a use case arises this allows for a much more straightforward and efficient execution algorithm.
+** The implementation
+Elvysh provides several core components to make this model real:
+
++ *Interfaces* include protocols between namespaces (or between the user and namespaces), 
 ** L Core technical components/architecture implementing the model
 + GC
 + Centralize reductions/per user
@@ -126,23 +128,54 @@ In order to have caching/reduction for composite names whose substitutions cross
 + Well-known projections
 + Naming
   + Hashing vs authoritative name server, what to hash
-** M Potential applications (general, not Scarf specific)
-*** Prior work
-+ CAS (git, IPFS)
-+ Nix
-  + Enforcement note
-  + Reduction for fixed output
-+ Unison
-+ Nelson
-+ Cross comp
-+ Modules/functions/computation (Unison)
-+ Pipeline
-+ Packages
-+ Services
-  + Restart vs reconfig
-+ Compliation
-+ Memory map
-+ Secrets capabilitial
++ Trusted ns vs root ns
+** Applications
+In this section, we'll survey a non-exhaustive list of possible applications of elvysh. Keep in mind that a key feature is that names and substitution can operate across domains, so we should expect synergy between these when multiple are implemented!
+
+*** Content-addressed storage
+Any time we have some resource type defined by its contents and those contents are cheap enough to enumerate, we can build a content-addressed namespace around it. The typical example is immutable files: given any file, we can build a named resource whose contents match that file's at one read-through and whose spelling is a direct hash of the contents. We can also build contextual resources based on handles to the resource in question, e.g. we may have a name ~stdin~ that takes file descriptor 0 from the context, starts reading through it and saving the file to the store, and when it's done emits a reduction to the named resource corresponding to the file just saved.
+
+There are many many systems implementing content-addressed storage for files, including git's object store and the IPFS distributed file system. These could be reimplemented as elvysh namespaces, or in cases like IPFS elvysh may reuse its protocols for effective distribution and storage.
+
+It is expected that many namespaces will have their names reduce to some content-addressed named resource when it's feasible to do so, as this allows reuse of the underlying storage mechanisms and enables reuse when two potentially very different processes result in the same outcome.
+*** Package management
+Fully reproducible efficiently shared package environments are a core use case of elvysh. The seed of elvysh's design comes from Nix, a system that provides many of the benefits of elvysh specific to the package management domain:
+
++ Nix has content-addressed storage, extended from regular files to the subset of directories that is needed to represent full packages
++ Nix has a mechanism for serializing package build scripts that captures package dependencies as well as the commands to run, which it then hashes to get an identifier for the resulting package
+
+Together with an isolation mechanism to ensure that nothing unlisted is used, this allows for a package's identifier to correspond exactly to the steps required to produce it from a base set of content-addressed files. Elvysh can extend this by:
+
++ Having higher level notions of "package", e.g. a resource type for a "cross-compiled package" that treats as equivalent two packages that use otherwise identical inputs but one was cross-compiled and one native
++ Having multiple namespaces allowing different naming rules and instantiation processes; Nix's are appropriately strict given the need to capture arbitrary package build scripts and ensure determinism, but are overkill and inefficient for many use cases.
++ Having a representation for unsubstituted names with inputs that can be reused in different combinations
++ Allowing fine-grained contextuality, for cases where full purity is not appropriate
++ Having reductions[fn:fixed], including the so-called "intensional store" and recursive Nix
++ Enabling optimizations by elvysh-aware components, such as early use of partially-instantiated packages and more efficient runtime dependency identification
++ Allowing the package environments themselves to be first-class resources, enabling higher level operations like "install a package into my user env" to be directly represented in the system
++ Allowing for secret files to exist in appropriately restricted namespaces, when building system configurations.
+
+[fn:fixed] Arguably Nix already has reductions in the single case of fixed-output derivations; they (statically) reduce to the fixed output file with the appropriate hash. This allows for e.g. nix-prefetch-url to work without running a derivation.
+*** Unison
+Unison is an in-development programming language whose core features can be seen as special cases of Elvysh. Unison has immutable content-addressed /expressions/, based on hashing of the language's AST (up to alpha equivalence). This allows for:
+
++ Implicit incremental compilation/evaluation. When Unison needs to evaluate some expression, it can very cheaply determine if it already has, or if it has evaluated some subexpression, and only needs to compile and compute what has changed.
++ Exact dependency management within the Unison unverse. Any definitions you depend on from some other project are fully content-addressed, with no room for naming conflicts (though of course if two parts of your code base use two "versions" of the same type, they won't automatically interconvert)
++ Native distributed computation. Code and computation can be straightforwardly distributed based on the desired compute graph, since we can easily determine if some (subset) of code already exists on a given node or some subset of the computation has already been evaluated, and purity of the language ensures it's safe to combine the results from any node.
++ Cheap correct renaming. Human-visible names are simple mappings to the actual underlying content-addressed name that can be easily updated, and in fact different users can have different names for the same expressions without issue.
+
+Elvysh can extend this by:
+
++ Combining the language functionalities with package management to give Unison an FFI that has the same easy transparent dependency management and preserves Unison's properties
++ Enabling some form of this functionality for arbitrary languages. Without significant work this would have to be restricted to the module level, but it would still allow the implicit recompilation and code distribution for any language
+  + In any context where we can guarantee evaluation is pure (e.g. safe Haskell, or a trusted promise), we can cache evaluation as well
++ Allowing alternate equivalence classes of expressions. If you update some function to make it more efficient but can prove (or, if trusted, assert) that it has the same behavior, the evaluation cache could use results from either version and older code could be automatically upgraded
+*** Service orchestration
+By treating services as resources, elvysh can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This share some properties with Nelson, an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
+*** Compute pipelines
+By modelling computation results as resources, individual stages as primitive names, and compute graphs as composed names, we can automatically orchestrate arbitrarily complex compute pipelines with safe caching and reuse. The same computation definition can be easily transformed to run locally threaded in-process or across hundreds of machines. We can capture batch processes or system state in contextual inputs that then reduce to non-contextual ones once accessed, thus automatically sharing work without an a priori notion of what has or hasn't changed.
+** Technical philosophy
+
 ** S Engineering standards/technical philosophy of the implementation
 + Spec
 + Composable (lib/framework)
