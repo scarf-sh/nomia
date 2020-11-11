@@ -196,15 +196,31 @@ There is remarkable synergy between elvysh's project goals and Scarf's:
 + Elvysh and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
 
 Each project would hugely benefit from the success of the other, and working as one we can drive that success together.
-** M Potential functionality and use cases of frontend(s)
+** Potential user workflow
+The long term vision has elvysh sinking into the background for the user, with all relevant tools having Scarf-provided functionality to make them natively elvysh aware. Your editor, your compiler, your shell, your browser, your application launcher all just understand elvysh names and combine them appropriately, with all the analytics available to Scarf. But that's an endpoint, not a starting point. Our initial target is package management, developer environments, and compilation for Rust and Haskell developers.
 
-+ Command not found/implicit env (w/locking?)
-*** Match domain-specific tooling
-** M Expected user knowledge/background for various use cases
+Wherever possible, we want to match the existing behaviors users are already used to. They should be able to install and uninstall packages by name, do the equivalent of ~cabal build~, use ~Cargo.lock~ for dependency pinning, etc. In order to integrate in with existing tooling as much as possible (e.g. editor integrations), these will ideally be drop-in command line replacements that can be added to the PATH. The Scarf tools would then translate those into appropriate Elvysh names under the hood and update the results appropriately. However, some cases may require more elvysh-specific specification, such as:
+
++ Declarative user environment specifications
++ Using a specific GHC version
++ Dependencies on internal projects (including local checkouts vs internal releases)
++ Cross-language dependencies
++ Ensuring everyone on the team is using the exact same package set all the way down
+
+In these cases, we will endeavor to provide simple domain-specific configurations. A declarative user environment could consist of, say, a git revision for the package repository and a list of package names from that repository, and we could even have the command line tool to add/remove packages keep such a configuration up to date. While the configuration languages are developing, however, we will also provide "escape hatches" to provide programs that directly speak elvysh's protocols or, in the case of packages, Nix code to manipulate the package set. The goal will be to identify wherever these escape hatches are needed and find a semantically appropriate way to represent that in the higher level language, in particular limiting the amount of Nix code that needs to be written or understood as much as possible.
+
+Over time, we will endeavor to move as much as possible into upstream components (e.g. Cargo should speak elvysh, possibly through a plugin) and the rest into standalone tools that are integrated into the rest of the ecosystem (e.g. your editor can understand the Scarf project environment file and set up its local environment appropriately).
+
+In the longer run, ideally we'd have as much of this as possible happen implicitly/on-demand. For example, we might have:
+
++ "command not found"-style functionality to automatically fetch a package not yet installed, optionally including it as part of the environment and kept up to date with the rest
++ Background rebuilding, or even the entire CI/CD process, on file save
++ Shell automatically entering the environment for a specific project when opened
+** TODO M Expected user knowledge/background for various use cases
 (incl setup/config)
-** M Expected interface with Elvysh core
-** M Accompanying infrastructure
-* Project plan
+** TODO M Expected interface with Elvysh core
+** TODO M Accompanying infrastructure
+* TODO Project plan
 ** L Roadmap with technical and functional milestones
 Nixpkgs compat:
   Add files
@@ -251,8 +267,6 @@ Portability?
 ** M Proposal for messaging/marketing to existing Nix and developer tool communities
 ** M Expected limitations of each milestone and the completed initial product
 ** S Future opportunities
-* S Proposed terms of employment
-** Governance
+* TODO Proposed terms of employment
+** TODO Governance
 Owner's interest, maintainers decisision
-
-7S, 8M, 5L
