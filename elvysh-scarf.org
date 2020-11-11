@@ -1,7 +1,7 @@
 #+TITLE: Elvysh and Scarf
 #+OPTIONS: H:5
 #+OPTIONS: toc:nil
-Scarf's strategy centers around a unified package distribution platform and capturing analytics for maintainers. This document introduces elvysh, a technical system that can provide the underpinnings of those capabilities and help ensure a Scarf program on every machine.
+Scarf's strategy centers around a unified package distribution platform and capturing analytics for maintainers. This document introduces elvysh, a technical system that can provide the underpinnings of those capabilities, and how we can use it to ensure a Scarf program on every machine.
 * Deep dive into Elvysh
 #+BEGIN_QUOTE
 There are only two hard things in Computer Science: cache invalidation and naming things.
