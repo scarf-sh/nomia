@@ -227,46 +227,142 @@ In addition to elvysh itself and the frontends, some additional infrastructure w
 + Scarf likely needs a cache, of packages at least
 
 Over time, Scarf could also offer other elvysh-powered services, such as CI or even a PaaS offering.
-* TODO Project plan
-** L Roadmap with technical and functional milestones
-Nixpkgs compat:
-  Add files
-    direct add to store
-    Builtin drvs
-    recursive vs flat
-  References
-  Run drvs
-    Basic execution
-    Funky special features
-    Serialize drvs
-    Intensional?
-    Recursive?
-    Remote?
-    Substitution?
-  GC
-  nixexpr interface
-    Basic eval
-    String context
-    path
-    derivationStrict
-    funky builtins?
-    Interface to other stores?
-  nixenv/profile interface
-    GC connected to profile dirs
-Haskell
-  Individual module
-  Whole package
-  Deps?
-  nix bidi interaction
-Interface
-  C
-  Rust
-  Haskell
-Documentation
+* Feature roadmap
+Roadmap, user-functionality driven. Parallelizable after X. Tests/docs/etc. junior option
+** Immutable flat file namespace
+Names
+
++ File associated w/fd
++ File with content hash
+
+No subst except context resolution
+
+Reductions
+
++ fd -> w/contents
+
+No lazy (lazy read?), no push
+
+in-progress:
+
++ while file loading (EOF ≠ done)
+
+Basic functionality:
++ GC
++ Handle acquisition
++ Scheduling/event management
++ Hash algos
++ File storage
++ O11Y interface
+** Immutable system package namespace
+Names
+
++ Stream serialization
++ dir cap
++ Hash of serialzation
++ Subpath of dir (auto?)
+
+Subst within namespace or flat file ref, has a trusted "flat file" ns
+
+Reductions
+
++ -> w/contents
+
+Lazy read theoretically possible (populate asked for subpath first?), no push
+
+in-progress:
+
++ While dir populated (readdir not complete)
+
+Forward to/link to immutable file? exe files? Custom dir repr?
+
+Projections to file?
+
+Reference management?
+
+** Fetch namespace(s)
+Names
+
++ GET
++ git
+
+No subst except context resolution
+
+Reductions
+
++ GET to file associated w/fd
++ git to dir cap
+
+Possible hook for scarf, what about private?
+** Unpack namespace(s)?
+Unzip, etc. Needs trusted namespaces (start hard-code flat and dir, eventually use ns-ns)
+** self-referential immutable system package namespace? Reference knot-tying?
+Late binding, wrappers/env setup
+
+Reference management (subst by ref)
+
+Self-reference... otherwise delegate to immutable
+** execve namespace
+Run command, pass in handle to other namespaces, protocol to register refs/finish/etc. Within-exe + reductions
+
+Sandboxing
+
+Caps!
+** Local service namespace?
+Socket, state, temp, exe. Reuse service manager!
+
+State divisions? Cache etc.
+
+Config file/exe deps
+** namespace namespace
+User reductions? Overlay?
+
+Service exposing particular protocols
+
+Name validation
+
+Nesting?
+** nix drv namespace?
+If need to emulate something there? Bultin drvs etc.
+** nixexpr integration
+Within nix or libnixexpr? Or maybe hnix works by then...
+
+Start with store API impl, see what needs to be exposed
+
+Interface to other namespaces?
+** package env namespace
+Add, remove package
+
+Generations, rollback
+
+Activate/enter
+** package manager CLI
+Leverages ns
+
+command-not-found?
+** rust incr
+Based on contents
+Based on iface
+Based on AST?
+
+Cargo level or module level
+** Haskell incr
+Based on contents
+Based on iface
+Based on AST?
+
+Cabal level or module level
+** 1.0-ready
+Protocol enhancement ready
+** Other stuff
+Special features of Nix drvs (e.g. passAsFile, structuredAttrs
+Remotes
+Subst
+Library interfaces (C, rust)
+Docs
   Reference/protocols
   Tutorials
   Cookbook/how-to
-Formal modelling
 Portability?
 ** L Detailed review of each phase
 ** L Timelines
