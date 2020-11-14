@@ -228,148 +228,123 @@ In addition to elvysh itself and the frontends, some additional infrastructure w
 
 Over time, Scarf could also offer other elvysh-powered services, such as CI or even a PaaS offering.
 * Feature roadmap
-Roadmap, user-functionality driven. Parallelizable after X. Tests/docs/etc. junior option
+This section lays out high level user functionality milestones, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
+
+A rough quarterly view based on the estimates:
+
++ Q1 will bring the foundations of namespaces and the filesystem primitives needed for package management
++ Q2 will bring the entire core elvysh functionality, including building packages and custom namespaces
++ Q3 will bring a package manager with full Nix language integration and analytics emitted from the client
++ Q4 will bring incremental builds for a chosen language and a stable 1.0 release
+
 ** Immutable flat file namespace
-Names
+This namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents. The initial version of the namespace exposes 2 names:
 
-+ File associated w/fd
-+ File with content hash
++ stream-file, which takes as input a readable file stream (e.g. an fd on Unix) and outputs a file whose contents are the concatenated results of a sequence of reads from the stream until EOF
++ file-with-hash, which takes as input a cryptographic hash and outputs a file whose contents hash accordingly. Instantiation will, obviously, fail if the desired file is not cached
 
-No subst except context resolution
+stream-file reduces to file-with-hash after the file is read and the hash determined. file-with-hash has a spelling determined by the hash.
 
-Reductions
+As the first namespace, this feature requires implementing a lot of the basic functionality of namespaces generally:
 
-+ fd -> w/contents
-
-No lazy (lazy read?), no push
-
-in-progress:
-
-+ while file loading (EOF ≠ done)
-
-Basic functionality:
-+ GC
-+ Handle acquisition
-+ Scheduling/event management
-+ Hash algos
++ Basic project scaffolding (repos, project structure, tests, CI/CD)
++ Garbage collection and roots
++ Capability acquisition protocol
++ Hash algorithm integration
 + File storage
-+ O11Y interface
-** Immutable system package namespace
-Names
++ Validity database (if filesystem inadequate)
++ Observability interfaces (production and consumption)
++ Scheduling/event loop management
++ Protocols for instantiating a name and emitting/consuming reductions
++ Library interfaces to protocols
 
-+ Stream serialization
-+ dir cap
-+ Hash of serialzation
-+ Subpath of dir (auto?)
+While the basic functionality of the namespace is quite simple, due to the number of technical prerequisites and basic decisions that need to be made to get there I estimate 1-2 months.
 
-Subst within namespace or flat file ref, has a trusted "flat file" ns
+** Immutable filesystem management for packages
+After this milestone, the basic filesystem primitives needed for package management will be in place. This includes:
 
-Reductions
++ Content-addressed directories, based on a canonical serialization, that allow for at least readable and executable files
++ Names for fetching (downloading a URL, getting a git repository)
++ Names for unpacking (unzip, untar)
 
-+ -> w/contents
+Additional foundational work needed to support this includes:
 
-Lazy read theoretically possible (populate asked for subpath first?), no push
++ Cross-namespace substitutions and reductions, requiring a namespace trust mechanism
++ Projections (e.g. treating a subdirectory as a directory, treating a file in a directory as a file for unpacking)
 
-in-progress:
+Estimated time to completion of 1 month
+** Building packages
+This milestone will provide the ability to define and build packages. This includes:
 
-+ While dir populated (readdir not complete)
++ Reference management for "run-time" substitutions (package A depending on package B)
++ Self reference-aware content-addressable storage (e.g. if an executable unavoidably hard-codes a path to its own directory, we need to determine the path based on the contents /modulo/ that self-reference)
++ Names for safely executing given programs in a given environment (including any dependent namespaces), with protocols for registering references, outputs, reductions, etc. as well as optional sandboxing. Spelling based on the build reciple's contents.
 
-Forward to/link to immutable file? exe files? Custom dir repr?
+Ideally we will reuse existing sandboxing mechanisms for execution isolation, such as lightweight containers (or, where available, capsicum-style isolation)
 
-Projections to file?
+Estimated time of completion of 1 month, up to 1.5 if isolation is not reusable.
+** Namespace namespaces
+After this milestone, the full "core" functionality set of Elvysh will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
 
-Reference management?
++ Names to spin up a local service, reusing existing service management capabilities
++ Protocol for name validation of potentially untrusted namespace
++ Mechanism for user-configurable canonical namespace spellings
++ Adapting existing namespaces to use dynamic trust mechanism where appropriate
 
-** Fetch namespace(s)
-Names
+Estimated time of completion 1.5 months.
+** Nix integration
+At the end of this milestone, it will be possible to build arbitrary nixpkgs packages. Required components:
 
-+ GET
-+ git
++ Integration with the C++ libnixexpr (or alt implementation if ready by then, e.g. hnix)
++ Possibly a special "nix derivation" namespace, if existing namespaces have too big of an impedence mismatch
 
-No subst except context resolution
+Given the complexity of the C++ codebase and Nix's organically-evolved derivation semantics, I estimate 2 months for completion.
+** Scarf CLI
+After this milestone, there will be a Scarf package manager. This involves:
 
-Reductions
++ A namespace for package environments, including modifying the package set, rollbacks, environment activation, etc.
++ A command-line interface for managing these environments
++ Initial configuration language for describing environments, with "escape hatches" to Nix
++ Client side of analytics capture
 
-+ GET to file associated w/fd
-+ git to dir cap
+Depending on the discovered complexity of the environment configuration language, I estimate 1-2 months. Note that this does *not* include any server-side work to capture or analyze the data!
+** Incremental builds
+After this milestone, we will be able to showcase integrated incremental distributed builds for a language of choice. The details of this are highly dependent on the language and integration decided, but is likely to end up in the 1-2 months range for the first language.
+** Stabilization
+Before we can declare an initial "stable" 1.0 release, we will need to make sure all of our bases are covered. Much of this is likely to be covered along the way as part of other milestones, but there will probably be some level of mop-up when we are otherwise feature-ready.
 
-Possible hook for scarf, what about private?
-** Unpack namespace(s)?
-Unzip, etc. Needs trusted namespaces (start hard-code flat and dir, eventually use ns-ns)
-** self-referential immutable system package namespace? Reference knot-tying?
-Late binding, wrappers/env setup
++ Documentation
+  + Reference
+  + Protocol specs
+  + Tutorials
+  + Cookbooks/basic how-tos
+  + Library/code documentation
+  + Catalog of core resource types and their affordances
++ Library interfaces to all functionality
+  + Ideally at least C ffi + rust
++ Testing and other validation
++ Elvysh self-hosting as a package
++ Project governance structure
++ Project branding/naming
++ Analytics work well with privacy requirements
 
-Reference management (subst by ref)
+*** Future enhancement ready
+There are a number of features which need not be implemented before the initial stable version, but we should ensure are possible to implement without significantly breaking compatibility with 1.0:
 
-Self-reference... otherwise delegate to immutable
-** execve namespace
-Run command, pass in handle to other namespaces, protocol to register refs/finish/etc. Within-exe + reductions
-
-Sandboxing
-
-Caps!
-** Local service namespace?
-Socket, state, temp, exe. Reuse service manager!
-
-State divisions? Cache etc.
-
-Config file/exe deps
-** namespace namespace
-User reductions? Overlay?
-
-Service exposing particular protocols
-
-Name validation
-
-Nesting?
-** nix drv namespace?
-If need to emulate something there? Bultin drvs etc.
-** nixexpr integration
-Within nix or libnixexpr? Or maybe hnix works by then...
-
-Start with store API impl, see what needs to be exposed
-
-Interface to other namespaces?
-** package env namespace
-Add, remove package
-
-Generations, rollback
-
-Activate/enter
-** package manager CLI
-Leverages ns
-
-command-not-found?
-** rust incr
-Based on contents
-Based on iface
-Based on AST?
-
-Cargo level or module level
-** Haskell incr
-Based on contents
-Based on iface
-Based on AST?
-
-Cabal level or module level
-** 1.0-ready
-Protocol enhancement ready
-** Other stuff
-Special features of Nix drvs (e.g. passAsFile, structuredAttrs
-Remotes
-Subst
-Library interfaces (C, rust)
-Docs
-  Reference/protocols
-  Tutorials
-  Cookbook/how-to
-Portability?
-** L Detailed review of each phase
-** L Timelines
-** S Opportunities for parallelism/team work
-** M Proposal for messaging/marketing to existing Nix and developer tool communities
-** M Expected limitations of each milestone and the completed initial product
-** S Future opportunities
++ Protocol enhancements
++ Remote builders
++ Namespace forwarding
++ Rare special features of Nix derivations (e.g. structuredAttrs)
++ Portability to other systems
++ In-progress resource consumption, e.g. start using a file while it's being downloaded
++ Lazy resource instantiation, e.g. only instantiating a sub-directory when accessed
++ Push-based names, e.g. a name that watches a file and triggers a cascade leading to recompilation when it changes
++ Generic caching, e.g. TTL cache
++ Storage and scheduler flexibility, e.g plugging in IPFS or using a new event loop
++ Substructral annotations and optimizations
++ User/system reduction databases
++ namespace-namespace overlays
++ Centralized orchestration/optimized resource management
 * TODO Proposed terms of employment
 ** TODO Governance
 Owner's interest, maintainers decision

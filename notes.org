@@ -4,6 +4,15 @@
 + Name equiv => 2-iso?
 + Subobject/subtype?
 + Resource limits/caps
++ Value-like resources (e.g. hash serialization)
++ Custom dir repr?
++ Dir/regular file links?
++ Late binding refs
++ Within-exe hash changes
++ In-progress:
+  + immutable stream-file in progress (EOF ≠ done)
+  + Directory load
++ command-not-foudn
 * TODO Figures
 * TODO Title
 * TODO Links
