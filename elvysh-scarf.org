@@ -228,26 +228,35 @@ In addition to elvysh itself and the frontends, some additional infrastructure w
 
 Over time, Scarf could also offer other elvysh-powered services, such as CI or even a PaaS offering.
 * Feature roadmap
-This section lays out high level user functionality milestones, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
+This section lays out high level user functionality milestones based on the requirements of a scarf package manager and build tool, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
 
 A rough quarterly view based on the estimates:
 
-+ Q1 will bring the foundations of namespaces and the filesystem primitives needed for package management
-+ Q2 will bring the entire core elvysh functionality, including building packages and custom namespaces
-+ Q3 will bring a package manager with full Nix language integration and analytics emitted from the client
-+ Q4 will bring incremental builds for a chosen language and a stable 1.0 release
++ Q1 will bring an initial tool and interface.
++ Q2 into Q3 will improve the foundations, replacing the Nix store dependency with elvysh dependencies and allowing direct integration with Scarf's distribution channels.
++ Q3 into Q4 will bring the full core elvysh functionality, including user-extensible namespaces, integrated as appropriate with the package manager.
++ Q4 into Q1 will bring incremental builds for a chosen language and a stable 1.0 release.
 
+Note that with some small overhead we can do incremental builds before user-extensible namespaces, if desirable for the product roadmap at the time.
+
+** Initial Scarf CLI
+This milestone will bring the initial version of the Scarf package manager that users can start managing packages with. This will mainly be centered around providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this will require:
+
++ Specifying enough of the semantics of a future package environment resource namespace to guide the interface
++ Determining and implementing the command interface
++ Determining and implementing the configuration interface
++ Integration with the Nix expression language and nixpkgs
++ Temporary integration with the Nix store to instantiate packages
++ Initial project scaffolding (repos, project structure, tests, CI/CD, etc.)
+
+Note that the initial version will work standalone as a client, but will eventually require integration in with Scarf infrastructure to provide needed functionality (e.g. Scarf package resolver, blessed package sets, caching, etc.)
+
+Depending on the desired functionality scope, I estimate 1-2 months.
 ** Immutable flat file namespace
-This namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents. The initial version of the namespace exposes 2 names:
-
-+ stream-file, which takes as input a readable file stream (e.g. an fd on Unix) and outputs a file whose contents are the concatenated results of a sequence of reads from the stream until EOF
-+ file-with-hash, which takes as input a cryptographic hash and outputs a file whose contents hash accordingly. Instantiation will, obviously, fail if the desired file is not cached
-
-stream-file reduces to file-with-hash after the file is read and the hash determined. file-with-hash has a spelling determined by the hash.
+After this milestone, all flat file storage for the package manager will be implemented in an elvysh namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
 
 As the first namespace, this feature requires implementing a lot of the basic functionality of namespaces generally:
 
-+ Basic project scaffolding (repos, project structure, tests, CI/CD)
 + Garbage collection and roots
 + Capability acquisition protocol
 + Hash algorithm integration
@@ -258,10 +267,15 @@ As the first namespace, this feature requires implementing a lot of the basic fu
 + Protocols for instantiating a name and emitting/consuming reductions
 + Library interfaces to protocols
 
-While the basic functionality of the namespace is quite simple, due to the number of technical prerequisites and basic decisions that need to be made to get there I estimate 1-2 months.
+And of integrating in with the command line tool:
+
++ Integration with Nix language primitives for adding files
++ Nix store → Elvysh namespace dependencies
+
+While the basic functionality of the namespace is quite simple, due to the number of technical prerequisites and basic decisions that need to be made to get there I estimate 1.5-3 months.
 
 ** Immutable filesystem management for packages
-After this milestone, the basic filesystem primitives needed for package management will be in place. This includes:
+After this milestone, the basic filesystem primitives needed for package management will be in place, as well as integration into Scarf's distribution channels if and when they are available. This includes:
 
 + Content-addressed directories, based on a canonical serialization, that allow for at least readable and executable files
 + Names for fetching (downloading a URL, getting a git repository)
@@ -272,17 +286,17 @@ Additional foundational work needed to support this includes:
 + Cross-namespace substitutions and reductions, requiring a namespace trust mechanism
 + Projections (e.g. treating a subdirectory as a directory, treating a file in a directory as a file for unpacking)
 
-Estimated time to completion of 1 month
+Estimated time to completion of 1.5 months
 ** Building packages
-This milestone will provide the ability to define and build packages. This includes:
+This milestone will provide the ability to define and build packages. After this milestone we should have no further reliance on the Nix store implementation. This includes:
 
 + Reference management for "run-time" substitutions (package A depending on package B)
 + Self reference-aware content-addressable storage (e.g. if an executable unavoidably hard-codes a path to its own directory, we need to determine the path based on the contents /modulo/ that self-reference)
 + Names for safely executing given programs in a given environment (including any dependent namespaces), with protocols for registering references, outputs, reductions, etc. as well as optional sandboxing. Spelling based on the build reciple's contents.
 
-Ideally we will reuse existing sandboxing mechanisms for execution isolation, such as lightweight containers (or, where available, capsicum-style isolation)
+Ideally we will reuse existing sandboxing mechanisms for execution isolation, such as lightweight containers (or, where available, capsicum-style isolation).
 
-Estimated time of completion of 1 month, up to 1.5 if isolation is not reusable.
+Estimated time of completion of 1.5 months, up to 2 if isolation is not reusable.
 ** Namespace namespaces
 After this milestone, the full "core" functionality set of Elvysh will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
 
@@ -291,25 +305,14 @@ After this milestone, the full "core" functionality set of Elvysh will be availa
 + Mechanism for user-configurable canonical namespace spellings
 + Adapting existing namespaces to use dynamic trust mechanism where appropriate
 
-Estimated time of completion 1.5 months.
-** Nix integration
-At the end of this milestone, it will be possible to build arbitrary nixpkgs packages. Required components:
+If desired for package manager functionality, this will also include:
 
-+ Integration with the C++ libnixexpr (or alt implementation if ready by then, e.g. hnix)
-+ Possibly a special "nix derivation" namespace, if existing namespaces have too big of an impedence mismatch
++ Nix language access to alternate namespaces
++ Specific package namespaces for specific ecosystems (e.g. an NPM package namespace)
 
-Given the complexity of the C++ codebase and Nix's organically-evolved derivation semantics, I estimate 2 months for completion.
-** Scarf CLI
-After this milestone, there will be a Scarf package manager. This involves:
-
-+ A namespace for package environments, including modifying the package set, rollbacks, environment activation, etc.
-+ A command-line interface for managing these environments
-+ Initial configuration language for describing environments, with "escape hatches" to Nix
-+ Client side of analytics capture
-
-Depending on the discovered complexity of the environment configuration language, I estimate 1-2 months. Note that this does *not* include any server-side work to capture or analyze the data!
+Estimated time of completion 2-3 months, depending on functionality.
 ** Incremental builds
-After this milestone, we will be able to showcase integrated incremental distributed builds for a language of choice. The details of this are highly dependent on the language and integration decided, but is likely to end up in the 1-2 months range for the first language.
+After this milestone, we will be able to showcase integrated incremental distributed builds for a language of choice. The details of this are highly dependent on the language and integration decided, but is likely to end up in the 1.5-3 months range for the first language.
 ** Stabilization
 Before we can declare an initial "stable" 1.0 release, we will need to make sure all of our bases are covered. Much of this is likely to be covered along the way as part of other milestones, but there will probably be some level of mop-up when we are otherwise feature-ready.
 
