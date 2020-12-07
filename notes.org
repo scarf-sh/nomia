@@ -7,13 +7,29 @@
 + Value-like resources (e.g. hash serialization)
 + Custom dir repr?
 + Dir/regular file links?
-+ Late binding refs
++ Late binding refs (part of pitch to Nix world?)
 + Within-exe hash changes
 + In-progress:
   + immutable stream-file in progress (EOF ≠ done)
   + Directory load
 + command-not-foudn
 * TODO Figures
-* TODO Title
 * TODO Links
 * TODO Review/editing/cleanup
+* TODO The implementation
+Elvysh provides several core components to make this model real:
+
++ *Interfaces* include protocols between namespaces (or between the user and namespaces), 
+
++ GC
++ Centralize reductions/per user
++ Lazy/incomplete
++ Value-like resources
++ Pull/push
++ Provisional results
++ Scheduler/resource optimization/global optimization
++ Priority queue caps
++ Well-known projections
++ Naming
+  + Hashing vs authoritative name server, what to hash
++ Trusted ns vs root ns
