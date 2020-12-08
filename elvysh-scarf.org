@@ -1,18 +1,18 @@
 #+TITLE: Elvysh and Scarf
 #+OPTIONS: H:5
 #+OPTIONS: toc:nil
-Scarf's strategy centers around a unified package distribution platform and providing analytics to maintainers. This document introduces a system, provisionally named elvysh, that can provide the foundations of those capabilities and explains how it can encourage having Scarf's tools on every machine.
+Scarf's strategy centers around a unified package distribution platform and providing analytics to maintainers. This document introduces a system, provisionally named elvysh, that can provide the foundations of those capabilities in a way that encourages a Scarf tool on every machine.
 * Deep dive into Elvysh
 #+BEGIN_QUOTE
 There are only two hard things in Computer Science: cache invalidation and naming things.
 
   ---Phil Karlton
 #+END_QUOTE
-Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in special-case substitution of that name that preserves the intended meaning[fn:hope].
+Naming and substitution are ubiquitous[fn:church] in computation, and many systems end up dealing with them explicitly. Compilers take module names and substitute in appropriate symbol tables. Browsers take URLs and substitute in appropriate web sites. Package managers take package names and substitute in appropriate changes to your environment. In other cases, the system has no explicit handle on names but the user or programmer fills in: We refer to other pieces of code, or techniques, or other computations, or data sources, or a million other things by name, and in implementation fill in a special-case substitution of that name that preserves the intended meaning[fn:hope].
 
 These domains are, of course, very different. Browsers don't know what a symbol table is, and installing a package is distinct from translating source code to object code. But there are many conceptual commonalities between them, commonalities which in principle could allow for shared implementation and semantics. Unfortunately, most of the time the required functionality is reimplemented from scratch. Like any missed opportunity for reuse, this duplicates work and bugs, leaves many implementations incomplete with respect to functionality or performance, and increases cognitive overhead for users and developers. In this case we also miss opportunities for *cross*-system composition: My package manager may know how to install libpq, and my compiler may know how to resolve libpq-fe.h to a library once it's installed, but there's no general-purpose way to note that the one name links to the other. With the commonalities abstracted into a shared component, system implementers can focus on their domain expertise, and users can benefit from correctness, efficiency, and a coherent, easy to use experience across all of their systems.
 
-Imagine this is a typical day at work: You're about to start working on a service that you haven't worked on before. You point your editor to the source file you need to work on, and after a slight delay for it to be downloaded for the first time you have it open in front of you. You start modifying the code, and after a minute or two for the library dependencies to be downloaded syntax checking kicks in and points out a typo a few lines above. You save your change and jump over to another file that depends on it (which opens immediately) and start making changes there. At first your editor, with a warning that it's not up-to-date, says there's an undefined reference when you mentioned the new code you added, but after a few seconds for the first module to compile those errors go away. You finish the work and point your browser to the local service URL, getting a page saying that the service is being spun up, with a detailed progress report on what remains to be done. You notice a DB dump is being loaded and you know that will take a while, so you switch to another project, a compute pipeline. When you enter its environment you notice a huge merge just happened. You were up to date with master, so you don't have any conflicts, but you're not sure if the merge impacted the parts of the codebase you care about. A colleague recommends you try out [[https://meldmerge.org/][Meld]] to review the diff, you run a command to launch it and (after a minute of downloading, since you've never used it before) the window pops open and you confirm the merge was fine. You're testing out an algorithm tweak on the last stage that should only impact a small portion of the parallel work units of the pipeline. Although the CI system hasn't noticed the merge yet, when you open the module you notice the modules it depends on have already been fetched from when the original developer built the branch. After you finish implementation you kick off a dry-run of the pipeline, confirming it will be the same as that day's daily prod run except at the end for the subset your change impacts, before starting the job for real. While that's running, you switch back to your browser and see the service is loaded, so you check your work and, satisfied, open a PR, which triggers an auto-mention of the QA team with a URL to test out. You notice the pipeline run isn't quite done, so you turn off your computer and head out to lunch. When you get back, you see that the QA team reviewed your fix and it looks good and that the pipeline run is done, so you merge your changes to the first project and open up a comparison of the real prod run's results with your test run. After confirming the new results seem better, you open a PR with your proposed changes and head home.
+Imagine this is a typical day at work: You're about to start working on a service that you haven't worked on before. You point your editor to the source file you need to work on, and after a slight delay for it to be downloaded for the first time you have it open in front of you. You start modifying the code, and after a minute or two for the library dependencies to be downloaded syntax checking kicks in and points out a typo a few lines above. You save your change and jump over to another file that depends on it (which opens immediately) and start making changes there. At first your editor, with a warning that it's not up-to-date, says there's an undefined reference when you mentioned the new code you added, but after a few seconds for the first module to compile those errors go away. You finish the work and point your browser to the local service URL, getting a page saying that the service is being spun up, with a detailed progress report on what remains to be done. You notice a DB dump is being loaded and you know that will take a while, so you switch to another project, a compute pipeline. When you enter its environment you notice a huge merge just happened. You were up to date with master, so you don't have any conflicts, but you're not sure if the merge impacted the parts of the codebase you care about. A colleague recommends you try out [[https://meldmerge.org/][Meld]] to review the diff, so you run a command to launch it and (after a minute of downloading, since you've never used it before) the window pops open and you confirm the merge was fine. You're testing out an algorithm tweak on the last stage that should only impact a small portion of the parallel work units of the pipeline. Although the CI system hasn't noticed the merge yet, when you open the module you notice the modules it depends on have already been fetched from when the original developer built the branch. After you finish implementation you kick off a dry-run of the pipeline, confirming it will be the same as that day's daily prod run except at the end for the subset your change impacts, before starting the job for real. While that's running, you switch back to your browser and see the service is loaded, so you check your work and, satisfied, open a PR, which triggers an auto-mention of the QA team with a URL to test out. You notice the pipeline run isn't quite done, so you turn off your computer and head out to lunch. When you get back, you see that the QA team reviewed your fix and it looks good and that the pipeline run is done, so you merge your changes to the first project and open up a comparison of the real prod run's results with your test run. After confirming the new results seem better, you open a PR with your proposed changes and head home.
 
 To some of you, this may sound like a utopian dream. To others, a secret nightmare where all of the magic and implicit assumptions will inevitably cause a catastrophic break or, worse, subtle bugs missed until it's too late. A lucky few might have some subset of this available in some form in their domain. No one has it all... yet.
 
@@ -36,7 +36,10 @@ Note that resource types and their associated semantics can be very domain-speci
 *** Names
 Each of the resources you utilized were referenced by a *name*[fn:1-cell]: "meld" names a particular program, "the test site for the PR you opened" names a particular web service. More generally, a name can be a procedure relating a finite sequence of resource types (its *inputs*) to a resulting sequence of resource types (its *outputs*)[fn:domcod]: "the Acme webservice" might be a name that relates inputs like an executable for the service, a database, and a service config file to an output web service. We can visualize that as:
 
-[FIG]
+#+attr_latex: :width 100px
+[[./acme.png]]
+
+Where names are the boxes and inputs/outputs are labelled with their types.
 
 Names must be *deterministic*, in the sense that the process must produce equivalent outputs when provided equivalent inputs. This may seem to make them too strict to be useful, but there are two mitigating factors. First, recall that equivalence is a domain-specific notion; depending on how high level the output type equivalences are the name may have quite a bit of leeway in exactly how it instantiates the desired resources. Moreover, names can be *contextual* (or *indexical*), meaning that their output can depend on (some aspect of) the caller's context; "the results of today's prod pipeline run" depends on what "today" means. This is modelled by *context* resource types at the input, which can be thought of as specific subsets of "the state of the world from some particular perspective"; they can conceptually be instantiated with a (unique) instance from a caller outside the system or forwarded on (possibly after transformations) within it. Thus, we can refer to "the standard input of this process" or "the latest commit that built successfully in CI". Because each top-level instantiation is unique, contextual names are essentially unrestricted with respect to determinism, so long as the lack of determinism can be captured in the context.
 
@@ -44,11 +47,13 @@ Names with an empty list of inputs are therefore called *named resources*[fn:poi
 
 We can combine names via *substitution*[fn:1-comp], instantiating some input resources of one name with (subset *projections* of) the outputs of some other names (and so on recursively), resulting in a new name. We might visualize "the Acme webservice using the executable compiled from the latest code, the pristine test db, and some provided config file" as:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./acme-composed.png]]
 
 Which as a whole can be seen as new contextual name taking a config file as an input:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./acme-hidden.png]]
 
 Names are *referentially transparent*[fn:cut-elim], in that we can replace a substitution by "inlining" the result resource rather than referencing it and get the same output (this follows from determinism).
 
@@ -71,9 +76,10 @@ Many names can themselves be cheaply compared for equality by being associated w
 
 The rules for names given so far technically imply very strict resource management: Every resource must be used, exactly once, in order. There are some cases where this is necessary for correctness. Consider the case where a name depends on three input streams that gets instantiated with three pipes each filled sequentially by the same process; the first pipe must be completely read from before the process will start filling the second one, so the name must consume it first, and the data streams can be arbitrarily long so they cannot in general be duplicated. In most cases, however, we can relax this through any combination of the following three schemes for *[[https://en.wikipedia.org/wiki/Substructural_type_system][structural names]]*:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./structural.png]]
 
-*Weakening* lets you ignore some resource: the name doesn't do anything with its input. *Contracting* lets you duplicate some input: the name copies[fn:ref] the resource it's instantiated with and sends one copy over each output. *Exchanging*, which can also be visualized by simply crossing wires, lets you reorder inputs: the left input wire is forwarded on to the right output wire and vice versa.
+*Weakening*, which can also be visualized by failing to extend a wire to the output, lets you ignore some resource: the name doesn't do anything with its input. *Contracting*, which can also be visualized by a fork in a wire, lets you duplicate some input: the name copies[fn:ref] the resource it's instantiated with and sends one copy over each output. *Exchanging*, which can also be visualized by crossing wires, lets you reorder inputs: the left input wire is forwarded on to the right output wire and vice versa.
 
 By default, all inputs and outputs are eligible for all three schemes. On a case by case basis we can conceptually annotate given inputs or outputs with *substructural restrictions*. Marking an output as *relevant* indicates that the result must be used and thus can't be weakened; marking an input as relevant indicates that the name does in fact use that input (e.g. internally it doesn't weaken it anywhere). Marking an output as *affine* indicates that the result can't be copied and thus can't be contracted; marking an input as affine indicates that the name does not duplicate that input. Marking an output as *ordered* indicates that nothing before it can be used once it's used (if ever) and it can't be used once something after has been used and thus can't be exchanged; marking an input as ordered indicates that the name does not reorder resources around that input[fn:one-sided].
 
@@ -84,19 +90,25 @@ In addition to ensuring correctness in rare cases, these annotations can also be
 *** Reductions
 We've already seen how the properties of names allow for efficient resource instantiation and combination. Unfortunately, the efficiency ultimately relies on identifying equivalent inputs, which is not always cheap and sometimes impossible. Consider the compute pipeline. A "run of the pipeline" might depend on the entire pipeline package and then project out the executable for each stage:
 
-[FIG]
+#+attr_latex: :width 150px
+[[./pipeline-proj.png]]
 
 Since you've changed one module in the pipeline, the whole package has changed. If your change only impacts, say, the last stage of the pipeline, the individual stages might be able to recognize that their executables are unchanged. But after the first stage, this recognition wouldn't result in reuse: the first stage may have output cached results, but other stages may not be able to cheaply detect that the output is the same and so would have to rerun. *Reductions*[fn:2-cell] allow us to convey this kind of information by relating one name to another; once we know that "build the project and project out the first executable" reduces to "this particular named executable resource", we can apply our caching logic to the entire composed chain without ever running any particular unchanged stage:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./pipeline-proj-red.png]]
+
+Note that on the right hand side of the bottom reduction we know statically that the first input to Stage 3 is the same as it was in the previous build!
 
 Reductions compose with each other, including across substitutions and projections[fn:2-comp]; they can be thought of as substitutions at the name level. For example, if we have:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./2-comp-premise.png]]
 
 Then we get a composite reduction:
 
-[FIG]
+#+attr_latex: :width 200px
+[[./2-comp-conclusion.png]]
 
 Reductions must preserve determinism. Some trivial reductions come automatically: Any depth of nested substitutions reduces to a substitution where everything is simultaneous[fn:lax], contraction followed by weakening on one of the outputs cancels out to a noop, and a sequence of exchanges that leaves you back where you started cancels. Others are domain-specific, letting you express how your names relate to other names.
 
@@ -110,7 +122,7 @@ Reductions can effectively change the input requirements; we can drop, duplicate
 [fn:red-substruct] In particular, we can't drop a relevant wire unless we already used the resource before identifying/following the reduction, we can't retain an affine wire unless we haven't used it before identifying/following the reduction, and the evident but verbose rules for ordered wires apply as well.
 [fn:ml] Note that this could be arbitrarily complex; we could e.g. have some ML-based "fuzzy matching" on the inputs and an extra model state input, if we have some learned notion of when results are going to be "close enough" based on the input closeness.
 *** Namespaces
-Implicit in the whole discussion so far is that we are describing an open system: you can freely add new resource types, new names, new reductions, so long as they meet the requirements. Unfortunately, proving or enforcing those requirements is in general infeasible. Therefore, for safety purposes, the system as a whole is conceptually partitioned into multiple *namespaces*, each of which has control over the names and reductions within it but cannot influence names in namespaces that don't (transitively) reference it. You may have set up a namespace for managing your local project checkouts (so you can just tell your editor "open this file in that project"), and that if you compile a module that uses those files that namespace can impact the module compilation namespace to that extent, but outside of names that reference local project names the module compilation namespace is isolated from anything the local project namespace does, including any properties it violates.
+Implicit in the whole discussion so far is that we are describing an open system: you can freely add new resource types, new names, new reductions, so long as they meet the requirements. Unfortunately, proving or enforcing those requirements is in general infeasible. Therefore, for safety purposes, the system as a whole is conceptually partitioned into multiple *namespaces*, each of which has control over the names and reductions within it but cannot influence names in namespaces that don't (transitively) reference it. You may have set up a namespace for managing your local project checkouts (so you can just tell your editor "open this file in that project"), and if you compile a module that uses those files that namespace can impact the module compilation namespace to that extent, but outside of names that reference local project names the module compilation namespace is isolated from anything the local project namespace does, including any properties it violates.
 
 Namespaces are also the locus of caching, including distributed caching and reductions. Namespaces can keep previous results in a *store* or *forward* results from another namespace (say, on another machine). A namespace can also identify reductions for any of its names.
 
@@ -125,7 +137,7 @@ Any time we have some resource type defined by its contents and those contents a
 
 There are many many systems implementing content-addressed storage for files, including [[https://git-scm.com/][git]]'s object store and the [[https://ipfs.io/][IPFS]] distributed file system. These could be reimplemented as elvysh namespaces, or in cases like IPFS elvysh may reuse its protocols for effective distribution and storage. These systems almost always require you to fully load some resource into the storage before you can fully use it, while with elvysh we can treat as-yet unloaded files the same as already cached ones.
 
-It is expected that many namespaces will have their names reduce to some content-addressed named resource when it's feasible to do so, as this allows reuse of the underlying storage mechanisms and enables reuse when two potentially very different processes result in the same outcome.
+It is expected that many namespaces will have their names reduce to some content-addressed named resource when it's feasible to do so, as this allows sharing of the underlying storage mechanisms and enables reuse when two potentially very different processes result in the same outcome.
 *** Package management
 Fully reproducible efficiently shared package environments are a core use case of elvysh. The seed of elvysh's design comes from [[https://nixos.org/][Nix]], a system that provides many of the benefits of elvysh specific to the package management domain:
 
