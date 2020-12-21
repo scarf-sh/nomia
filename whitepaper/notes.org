@@ -14,9 +14,6 @@
   + Directory load
 + command-not-foudn
 + Spellings as the locus of composition in UX?
-* TODO Figures
-* TODO Links
-* TODO Review/editing/cleanup
 * TODO The implementation
 Elvysh provides several core components to make this model real:
 

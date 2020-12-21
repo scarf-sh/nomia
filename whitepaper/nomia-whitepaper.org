@@ -1,8 +1,8 @@
-#+TITLE: Elvysh and Scarf
+#+TITLE: Nomia and Scarf
 #+OPTIONS: H:5
 #+OPTIONS: toc:nil
-Scarf's strategy centers around a unified package distribution platform and providing analytics to maintainers. This document introduces a system, provisionally named elvysh, that can provide the foundations of those capabilities in a way that encourages a Scarf tool on every machine.
-* Deep dive into Elvysh
+Scarf's strategy centers around a unified package distribution platform and providing analytics to maintainers. This document introduces a system, called nomia, that can provide the foundations of those capabilities in a way that encourages a Scarf tool on every machine.
+* Deep dive into Nomia
 #+BEGIN_QUOTE
 There are only two hard things in Computer Science: cache invalidation and naming things.
 
@@ -16,14 +16,14 @@ Imagine this is a typical day at work: You're about to start working on a servic
 
 To some of you, this may sound like a utopian dream. To others, a secret nightmare where all of the magic and implicit assumptions will inevitably cause a catastrophic break or, worse, subtle bugs missed until it's too late. A lucky few might have some subset of this available in some form in their domain. No one has it all... yet.
 
-The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With appropriate use of names and a common system for substitution, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Elvysh provides the shared conceptual model and common implementation to make it real.
+The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With appropriate use of names and a common system for substitution, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Nomia provides the shared conceptual model and common implementation to make it real.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
 ** The conceptual model
-Elvysh models[fn:cat] several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
+Nomia models[fn:cat] several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
-[fn:cat] Elvysh's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
+[fn:cat] Nomia's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
 [fn:mon] Many of the concepts come together to form a particular kind of monoidal 2-category
 *** Resources
 In your hypothetical work day, you exploited a number of *resources*: The source files you edited, the modules you imported, the web service you tested. Your usage took advantage of various *affordances* exposed via *capabilities* (or *handles*): Your shell /executed/ meld via its /path in a directory/, the pipeline run comparison tool used /connections to the respective results tables/ to /read/ in the results (or maybe the results directly afford higher level comparison primitives).
@@ -130,79 +130,79 @@ In order to have caching/reduction for composite names whose substitutions cross
 
 [fn:anywhere] Technically we could safely allow namespaces to reduce based on what comes /after/ as well. But until a use case arises this allows for a much more straightforward and efficient execution algorithm.
 ** Applications
-In this section, we'll survey a non-exhaustive list of possible applications of elvysh. Keep in mind that a key feature is that names and substitution can operate across domains, so we should expect synergy between these when multiple are implemented!
+In this section, we'll survey a non-exhaustive list of possible applications of nomia. Keep in mind that a key feature is that names and substitution can operate across domains, so we should expect synergy between these when multiple are implemented!
 
 *** Content-addressed storage
 Any time we have some resource type defined by its contents and those contents are cheap enough to enumerate, we can build a content-addressed namespace around it. The typical example is immutable files: given any file, we can build a named resource whose contents match that file's at one read-through and whose spelling is a direct hash of the contents. We can also build contextual resources based on handles to the resource in question, e.g. we may have a name ~stdin~ that takes file descriptor 0 from the context, starts reading through it and saving the file to the store, and when it's done emits a reduction to the named resource corresponding to the file just saved.
 
-There are many many systems implementing content-addressed storage for files, including [[https://git-scm.com/][git]]'s object store and the [[https://ipfs.io/][IPFS]] distributed file system. These could be reimplemented as elvysh namespaces, or in cases like IPFS elvysh may reuse its protocols for effective distribution and storage. These systems almost always require you to fully load some resource into the storage before you can fully use it, while with elvysh we can treat as-yet unloaded files the same as already cached ones.
+There are many many systems implementing content-addressed storage for files, including [[https://git-scm.com/][git]]'s object store and the [[https://ipfs.io/][IPFS]] distributed file system. These could be reimplemented as nomia namespaces, or in cases like IPFS nomia may reuse its protocols for effective distribution and storage. These systems almost always require you to fully load some resource into the storage before you can fully use it, while with nomia we can treat as-yet unloaded files the same as already cached ones.
 
 It is expected that many namespaces will have their names reduce to some content-addressed named resource when it's feasible to do so, as this allows sharing of the underlying storage mechanisms and enables reuse when two potentially very different processes result in the same outcome.
 *** Package management
-Fully reproducible efficiently shared package environments are a core use case of elvysh. The seed of elvysh's design comes from [[https://nixos.org/][Nix]], a system that provides many of the benefits of elvysh specific to the package management domain:
+Fully reproducible efficiently shared package environments are a core use case of nomia. The seed of nomia's design comes from [[https://nixos.org/][Nix]], a system that provides many of the benefits of nomia specific to the package management domain:
 
 + Nix has content-addressed storage, extended from regular files to the subset of directories that is needed to represent full packages
 + Nix does substitution of compile-time and run-time dependencies by reference, with appropriate reference tracking for resource liveness.
 + Nix has a mechanism for serializing package build scripts that captures package dependencies as well as the commands to run, which it then hashes to get an identifier for the resulting package
 
-Together with an isolation mechanism to ensure that nothing unlisted is used, this allows for a package's identifier to correspond exactly to the steps required to produce it from a base set of content-addressed files. Elvysh can extend this by:
+Together with an isolation mechanism to ensure that nothing unlisted is used, this allows for a package's identifier to correspond exactly to the steps required to produce it from a base set of content-addressed files. Nomia can extend this by:
 
 + Having higher level notions of "package", e.g. a resource type for a "cross-compiled package" that treats as equivalent two packages that use otherwise identical inputs but one was cross-compiled and one native
 + Having multiple namespaces allowing different naming rules and instantiation processes; Nix's are appropriately strict given the need to capture arbitrary package build scripts and ensure determinism, but are overkill and inefficient for many use cases.
 + Having a representation for unsubstituted names with inputs that can be reused in different combinations, allowing for operations like "build that package but with a different compiler version" to be available at the store level.
 + Allowing fine-grained contextuality, for cases where full purity is not appropriate
 + Having reductions[fn:fixed], including the so-called "intensional store" and recursive Nix
-+ Enabling optimizations by elvysh-aware components, such as early use of partially-instantiated packages and more efficient runtime dependency identification
++ Enabling optimizations by nomia-aware components, such as early use of partially-instantiated packages and more efficient runtime dependency identification
 + Allowing the package environments themselves to be first-class resources, enabling higher level operations like "install a package into my user env" to be directly represented in the system
 + Allowing for secret files to exist in appropriately restricted namespaces, when building system configurations.
 
 [fn:fixed] Arguably Nix already has reductions in the single case of fixed-output derivations; they (statically) reduce to the fixed output file with the appropriate hash. This allows for e.g. nix-prefetch-url to work without running a derivation.
 *** Unison
-[[https://www.unisonweb.org/][Unison]] is an in-development programming language whose core features can be seen as special cases of Elvysh. Unison has immutable content-addressed /expressions/, based on hashing of the language's AST (up to alpha equivalence). This allows for:
+[[https://www.unisonweb.org/][Unison]] is an in-development programming language whose core features can be seen as special cases of nomia. Unison has immutable content-addressed /expressions/, based on hashing of the language's AST (up to alpha equivalence). This allows for:
 
 + Implicit incremental compilation/evaluation. When Unison needs to evaluate some expression, it can very cheaply determine if it already has, or if it has evaluated some subexpression, and only needs to compile and compute what has changed.
 + Exact dependency management within the Unison universe. Any definitions you depend on from some other project are fully content-addressed, with no room for naming conflicts (though of course if two parts of your code base use two "versions" of the same type, they won't automatically interconvert)
 + Native distributed computation. Code and computation can be straightforwardly distributed based on the desired compute graph, since we can easily determine if some of the code already exists on a given node or some subset of the computation has already been evaluated, and purity of the language ensures it's safe to combine the results from any node.
 + Cheap correct renaming. Human-visible names are simple mappings to the actual underlying content-addressed name that can be easily updated, and in fact different users can have different names for the same expressions without issue.
 
-Elvysh can extend this by:
+Nomia can extend this by:
 
 + Combining the language functionalities with package management to give Unison an FFI that has the same easy transparent dependency management and preserves Unison's properties
 + Enabling some form of this functionality for arbitrary languages. Without significant work this would have to be restricted to the module level, but it would still allow the implicit recompilation and code distribution for any language
   + In any context where we can guarantee evaluation is pure (e.g. safe Haskell, or a trusted promise), we can cache evaluation as well
 + Allowing alternate equivalence classes of expressions. If you update some function to make it more efficient but can prove (or, if trusted, assert) that it has the same behavior, the evaluation cache could use results from either version and older code could be automatically upgraded
 *** Service orchestration
-By treating services as resources, elvysh can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This shares some properties with [[https://getnelson.io/][Nelson]], an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
+By treating services as resources, nomia can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This shares some properties with [[https://getnelson.io/][Nelson]], an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
 *** Compute pipelines
 By modelling computation results as resources, individual stages as primitive names, and compute graphs as composed names, we can automatically orchestrate arbitrarily complex compute pipelines with safe caching and reuse. The same computation definition can be easily transformed to run locally threaded in-process or across hundreds of machines. We can capture batch processes or system state in contextual inputs that then reduce to non-contextual ones once accessed, thus automatically sharing work without an a priori notion of what has or hasn't changed.
 *** Continuous integration
 A specification for continuous integration can be a name that composes all of the relevant projects together, and by combining contextuality and reduction we can capture notions like "the latest version of each dependency" without doing unnecessary new work. Test results can be seen as their own resource and potentially named independently of build products, with parallel computation possible if applicable.
 ** Engineering standards
-As an aspiring foundational component of nearly every system, it is vital that elvysh be engineered to very high standards. Specific principles include:
+As an aspiring foundational component of nearly every system, it is vital that nomia be engineered to very high standards. Specific principles include:
 
 + Specification. The system must have clear precise semantics, library interfaces must be fully documented, formats and protocols spelled out in detail. It should be possible based on specifications alone to reimplement any part of the system compatibly, or even the whole.
-+ Composability. The system must be made up of composable primitives that serve a single semantic purpose and can be combined in arbitrary ways so long as the semantics are respected. Wherever possible this applies even across versions; we do not assume everything running was compiled against the same master codebase. Users should be able to build arbitrary domain-specific systems on top of the core that can all interact. Elvysh may include some opinionated "best practice" combinations of components, but cannot assume that those components are always used in that configuration. Elvysh provides mechanism, not policy. Elvysh provides code for reuse wherever possible.
-+ Observability. Elvysh's users and developers need to be able to understand the behavior and state of the running system, without reinstrumentation or rebuilding. Elvysh components can build up and emit rich domain-specific structured event information at every step, which can be sampled and correlated across components to aid in debugging, understand user behavior, identify optimization opportunities, etc.
++ Composability. The system must be made up of composable primitives that serve a single semantic purpose and can be combined in arbitrary ways so long as the semantics are respected. Wherever possible this applies even across versions; we do not assume everything running was compiled against the same master codebase. Users should be able to build arbitrary domain-specific systems on top of the core that can all interact. Nomia may include some opinionated "best practice" combinations of components, but cannot assume that those components are always used in that configuration. Nomia provides mechanism, not policy. Nomia provides code for reuse wherever possible.
++ Observability. Nomia's users and developers need to be able to understand the behavior and state of the running system, without reinstrumentation or rebuilding. Nomia components can build up and emit rich domain-specific structured event information at every step, which can be sampled and correlated across components to aid in debugging, understand user behavior, identify optimization opportunities, etc.
 + Verification. Leveraging as appropriate peer review, testing, fuzzing, formal specification and model checking, formal implementation validation, run-time observation, etc., we want to continually iterate toward ensuring the system is sensibly specified and properly implemented.
-+ Security. Elvysh has security built in from the beginning, with clear boundaries between systems, a model assuming mutually untrusted implementations and users, and applying least privilege throughout. Wherever possible based on the underlying system primitives, elvysh uses [[https://en.wikipedia.org/wiki/Object-capability_model][object capability]]-style access control, and where not possible it is emulated if not prohibitive. In addition to eliminating whole classes of privilege escalation bugs, this makes for a much cleaner programming model when coordinating between many systems.
-+ Compatibility. Elvysh is designed for future enhancements wherever possible, and adheres to strict protocol and API versioning to ensure any backwards incompatibilities that must happen are caught early.
++ Security. Nomia has security built in from the beginning, with clear boundaries between systems, a model assuming mutually untrusted implementations and users, and applying least privilege throughout. Wherever possible based on the underlying system primitives, nomia uses [[https://en.wikipedia.org/wiki/Object-capability_model][object capability]]-style access control, and where not possible it is emulated if not prohibitive. In addition to eliminating whole classes of privilege escalation bugs, this makes for a much cleaner programming model when coordinating between many systems.
++ Compatibility. Nomia is designed for future enhancements wherever possible, and adheres to strict protocol and API versioning to ensure any backwards incompatibilities that must happen are caught early.
 + Portability. The core components should work on most platforms, and cross-platform interaction should work smoothly.
 * Scarf tools
-Elvysh alone is not a tool; it has no frontend, just interfaces. Users need some way to actually /use/ the functionality elvysh provides, and Scarf can provide those.
-** Why Elvysh and Scarf?
-There is remarkable synergy between elvysh's project goals and Scarf's:
+Nomia alone is not a tool; it has no frontend, just interfaces. Users need some way to actually /use/ the functionality nomia provides, and Scarf can provide those.
+** Why Nomia and Scarf?
+There is remarkable synergy between nomia's project goals and Scarf's:
 
-+ Elvysh's functionality will incentivize its prospective users to install Scarf's tooling to get access; Scarf's functionality will lead its prospective users into the elvysh ecosystem
-+ Elvysh provides a distribution model that can form the basis of Scarf's commercial platform; Scarf's commercial platform will provide the infrastructure and developer incentives to implement the model
-+ Elvysh enables a uniform package management experience across ecosystems and platforms; Scarf can bring multiple ecosystems and platforms to the table
-+ Elvysh's observability (or a namespace namespace that repoints URL lookups through Scarf) can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide elvysh's development to best meet the needs of its users
-+ Elvysh and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
++ Nomia's functionality will incentivize its prospective users to install Scarf's tooling to get access; Scarf's functionality will lead its prospective users into the nomia ecosystem
++ Nomia provides a distribution model that can form the basis of Scarf's commercial platform; Scarf's commercial platform will provide the infrastructure and developer incentives to implement the model
++ Nomia enables a uniform package management experience across ecosystems and platforms; Scarf can bring multiple ecosystems and platforms to the table
++ Nomia's observability (or a namespace namespace that repoints URL lookups through Scarf) can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide nomia's development to best meet the needs of its users
++ Nomia and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
 
 Each project would hugely benefit from the success of the other, and working as one we can drive that success together.
 ** Potential user workflow
-The long term vision has elvysh sinking into the background for the user, with all relevant tools having Scarf-provided functionality to make them natively elvysh aware. Your editor, your compiler, your shell, your browser, your application launcher all just understand elvysh names and combine them appropriately, with all the analytics available to Scarf. But that's an endpoint, not a starting point. Our initial target is package management, developer environments, and incremental compilation for some language such as Rust and/or Haskell.
+The long term vision has nomia sinking into the background for the user, with all relevant tools having Scarf-provided functionality to make them natively nomia aware. Your editor, your compiler, your shell, your browser, your application launcher all just understand nomia names and combine them appropriately, with all the analytics available to Scarf. But that's an endpoint, not a starting point. Our initial target is package management, developer environments, and incremental compilation for some language such as Rust and/or Haskell.
 
-Wherever possible, we want to match the existing behaviors users are already used to. They should be able to install and uninstall packages by name, do the equivalent of ~cabal build~, use ~Cargo.lock~ for dependency pinning, etc. In order to integrate in with existing tooling as much as possible (e.g. editor integrations), these will ideally be drop-in command line replacements that can be added to the PATH. The Scarf tools would then translate those commands into appropriate Elvysh names under the hood and update the results appropriately. However, some cases may require more elvysh-specific specification, such as:
+Wherever possible, we want to match the existing behaviors users are already used to. They should be able to install and uninstall packages by name, do the equivalent of ~cabal build~, use ~Cargo.lock~ for dependency pinning, etc. In order to integrate in with existing tooling as much as possible (e.g. editor integrations), these will ideally be drop-in command line replacements that can be added to the PATH. The Scarf tools would then translate those commands into appropriate nomia names under the hood and update the results appropriately. However, some cases may require more nomia-specific specification, such as:
 
 + Declarative user environment specifications
 + Using a specific GHC version
@@ -210,9 +210,9 @@ Wherever possible, we want to match the existing behaviors users are already use
 + Cross-language dependencies
 + Ensuring everyone on the team is using the exact same package set all the way down
 
-In these cases, we will endeavor to provide simple domain-specific configurations. A declarative user environment could consist of, say, a git revision for the package repository and a list of package names from that repository, and we could even have the command line tool to add/remove packages keep such a configuration up to date. While the configuration languages are developing, however, we will also provide "escape hatches" to provide programs that directly speak elvysh's protocols or, in the case of packages, Nix code to manipulate the package set. The goal will be to identify wherever these escape hatches are needed and find a semantically appropriate way to represent that in the higher level language, in particular limiting the amount of Nix code that needs to be written or understood as much as possible.
+In these cases, we will endeavor to provide simple domain-specific configurations. A declarative user environment could consist of, say, a git revision for the package repository and a list of package names from that repository, and we could even have the command line tool to add/remove packages keep such a configuration up to date. While the configuration languages are developing, however, we will also provide "escape hatches" to provide programs that directly speak nomia's protocols or, in the case of packages, Nix code to manipulate the package set. The goal will be to identify wherever these escape hatches are needed and find a semantically appropriate way to represent that in the higher level language, in particular limiting the amount of Nix code that needs to be written or understood as much as possible.
 
-Over time, we will endeavor to move as much as possible into upstream components (e.g. Cargo should speak elvysh, possibly through a plugin) and the rest into standalone tools that are integrated into the rest of the ecosystem (e.g. your editor can understand the Scarf project environment file and set up its local environment appropriately).
+Over time, we will endeavor to move as much as possible into upstream components (e.g. Cargo should speak nomia, possibly through a plugin) and the rest into standalone tools that are integrated into the rest of the ecosystem (e.g. your editor can understand the Scarf project environment file and set up its local environment appropriately).
 
 In the longer run, ideally we'd have as much of this as possible happen implicitly/on-demand. For example, we might have:
 
@@ -220,22 +220,22 @@ In the longer run, ideally we'd have as much of this as possible happen implicit
 + Background rebuilding, or even the entire CI/CD process, on file save
 + Shell automatically entering the environment for a specific project when opened, like direnv
 ** Accompanying infrastructure
-In addition to elvysh itself and the frontends, some additional infrastructure will be needed to fully realize the value:
+In addition to nomia itself and the frontends, some additional infrastructure will be needed to fully realize the value:
 
 + Scarf needs some way to capture and analyze the information identified by the frontends
 + Scarf needs a forwarding server if it's going to act as a registry
 + Scarf likely needs a cache, of packages at least
 + Scarf needs some way to define/offer up a "blessed" package set
 
-Over time, Scarf could also offer other elvysh-powered services, such as CI or even a PaaS offering.
+Over time, Scarf could also offer other nomia-powered services, such as CI or even a PaaS offering.
 * Feature roadmap
 This section lays out high level user functionality milestones based on the requirements of a scarf package manager and build tool, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
 
 A rough quarterly view based on the estimates:
 
 + Q1 will bring an initial tool and interface.
-+ Q2 into Q3 will improve the foundations, replacing the Nix store dependency with elvysh dependencies and allowing direct integration with Scarf's distribution channels.
-+ Q3 into Q4 will bring the full core elvysh functionality, including user-extensible namespaces, integrated as appropriate with the package manager.
++ Q2 into Q3 will improve the foundations, replacing the Nix store dependency with nomia dependencies and allowing direct integration with Scarf's distribution channels.
++ Q3 into Q4 will bring the full core nomia functionality, including user-extensible namespaces, integrated as appropriate with the package manager.
 + Q4 into Q1 will bring incremental builds for a chosen language and a stable 1.0 release.
 
 Note that with some small overhead we can do incremental builds before user-extensible namespaces, if desirable for the product roadmap at the time.
@@ -254,7 +254,7 @@ Note that the initial version will work standalone as a client, but will eventua
 
 Depending on the desired functionality scope, I estimate 1-2 months.
 ** Immutable flat file namespace
-After this milestone, all flat file storage for the package manager will be implemented in an elvysh namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
+After this milestone, all flat file storage for the package manager will be implemented in an nomia namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
 
 As the first namespace, this feature requires implementing a lot of the basic functionality of namespaces generally:
 
@@ -271,7 +271,7 @@ As the first namespace, this feature requires implementing a lot of the basic fu
 And of integrating in with the command line tool:
 
 + Integration with Nix language primitives for adding files
-+ Nix store → Elvysh namespace dependencies
++ Nix store → nomia namespace dependencies
 
 While the basic functionality of the namespace is quite simple, due to the number of technical prerequisites and basic decisions that need to be made to get there I estimate 1.5-3 months.
 
@@ -299,7 +299,7 @@ Ideally we will reuse existing sandboxing mechanisms for execution isolation, su
 
 Estimated time of completion of 1.5 months, up to 2 if isolation is not reusable.
 ** Namespace namespaces
-After this milestone, the full "core" functionality set of Elvysh will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
+After this milestone, the full "core" functionality set of nomia will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
 
 + Names to spin up a local service, reusing existing service management capabilities
 + Protocol for name validation of potentially untrusted namespace
@@ -327,7 +327,7 @@ Before we can declare an initial "stable" 1.0 release, we will need to make sure
 + Library interfaces to all functionality
   + Ideally at least C ffi + rust
 + Testing and other validation
-+ Elvysh self-hosting as a package
++ nomia self-hosting as a package
 + Project governance structure
 + Project branding/naming
 + Analytics work well with privacy requirements
