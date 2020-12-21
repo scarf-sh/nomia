@@ -13,6 +13,7 @@
   + immutable stream-file in progress (EOF ≠ done)
   + Directory load
 + command-not-foudn
++ Spellings as the locus of composition in UX?
 * TODO Figures
 * TODO Links
 * TODO Review/editing/cleanup
