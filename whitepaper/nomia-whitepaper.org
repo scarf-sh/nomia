@@ -1,8 +1,7 @@
-#+TITLE: Nomia and Scarf
+#+TITLE: A Deep Dive into Nomia
 #+OPTIONS: H:5
 #+OPTIONS: toc:nil
-Scarf's strategy centers around a unified package distribution platform and providing analytics to maintainers. This document introduces a system, called nomia, that can provide the foundations of those capabilities in a way that encourages a Scarf tool on every machine.
-* Deep dive into Nomia
+
 #+BEGIN_QUOTE
 There are only two hard things in Computer Science: cache invalidation and naming things.
 
@@ -16,22 +15,22 @@ Imagine this is a typical day at work: You're about to start working on a servic
 
 To some of you, this may sound like a utopian dream. To others, a secret nightmare where all of the magic and implicit assumptions will inevitably cause a catastrophic break or, worse, subtle bugs missed until it's too late. A lucky few might have some subset of this available in some form in their domain. No one has it all... yet.
 
-The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With appropriate use of names and a common system for substitution, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. Nomia provides the shared conceptual model and common implementation to make it real.
+The vision outlined here is not impossible. It's not inherently unreliable, or brittle, or limited to a few special use cases. With appropriate use of names and a common system for substitution, we can dramatically reduce manual work, increase efficiency, and ensure correctness in almost any domain where computers are used. *Nomia* is a system that provides the shared conceptual model and common implementation to make it real.
 
 [fn:church] If you take the [[https://en.wikipedia.org/wiki/Lambda_calculus][Church]] side of the [[https://en.wikipedia.org/wiki/Church%E2%80%93Turing_thesis][Church-Turing thesis]], name substitution is what computation *is*.
 [fn:hope] We hope!
-** The conceptual model
+* The conceptual model
 Nomia's design is based on a model[fn:cat] that defines several core concepts and their interrelations[fn:mon]. In this section, we'll revisit the developer's dream from the introduction and progressively build up the model as a lens to understand one way it might have happened.
 
 [fn:cat] Nomia's model is based off of structures borrowed from category theory. No category theory is needed to understand this section, but footnotes will be included for those with the background.
 [fn:mon] Many of the concepts come together to form a particular kind of monoidal 2-category
-*** Resources
+** Resources
 In your hypothetical work day, you exploited a number of resources: The source files you edited, the modules you imported, the web service you tested. A *resource* is any system component viewed as an object to be manipulated and used. Resources in nomia can be considered very broadly; in addition to traditional resources like files you could, say, treat the result of some expensive computation as a resource.
 
 You leveraged affordances of those resources: You /executed/ meld, you /read/ results of the pipeline run. An *affordance* is the form in which an attribute or capability of a resource that is accessible by the user of that resource.
 
 The affordances of the resources were exposed via handles: your browser loaded the local test page via an /open TCP connection/, your editor's code checker read in the module interfaces it depends on via a /file descriptor/. A *handle* is an abstract reference to a resource that can be used to operate its affordances from software. Handles typically have a limited lifetime and can be passed around from process to process.
-*** Resource types
+** Resource types
 Resources can be classified by their resource types: the algorithm you modified was a /pipeline component/, the site the QA team evaluated was a /test web service/. A *resource type*[fn:0-cell] is a conceptual identification of many different resources as being the same kind of thing from a certain perspective. A given resource may have many types: To your compiler, a module file is seen as a readable file, whereas to your editor the same file is seen as a read/writeable one.
 
 Resource types identify affordances common to all resources of that type and their semantics: A read/writeable file can be written to and read from, and assuming no intervening modifications a read from a certain location will give back the same contents that you last wrote. The *semantics* of an affordance are the meaning ascribed to it; the same affordance may have different semantics from different perspectives.
@@ -45,7 +44,7 @@ Resource types sometimes exist in a supertype/subtype relation: Any immutable re
 Note that resource types can be very domain-specific. They all depend on the relationship of the specific attributes of the resource in question /and/ your specific perspective and purpose in using it. Suppose the compute pipeline is written in C++ and your CI system uses gcc for performance but you prefer clang locally for the better error messages. The object files produced by the two compilers can be quite different, even viewed as object files, and so naïvely the object files compiled by CI after the big merge wouldn't be equivalent to the object files you'd compile locally. But viewed as "object files exporting the right symbols following the right platform ABI based on the relevant headers", they can be considered the same, as long as that perspective meets your use case's needs.
 
 [fn:0-cell] The (generators of the) 0-cells of the category. Note that we do not in general identify a specific resource with some point of the relevant 0-cell, in part because there is no 1:1 mapping between a resource and its type and in part for reasons detailed in the next section.
-*** Names
+** Names
 Each of the resources you utilized were first referenced by a name: "meld" names a particular program, "the test site for PR #XXX" names a particular web service. We might be tempted to think of names as identifying a specific resource, but in general we want to be able to work with names like "the Acme webservice" which identifies some specific web service /given/ some particular executable, a database, and a configuration file. In this more general sense, a *name*[fn:1-cell] is an identifier for some functional relationship between a (possibly empty) sequence[fn:sequence] of *input* resources by type and a resulting sequence of *output* resources by type[fn:domcod]. There is a visual notation for representing names generally in diagrams, where names are the boxes and inputs/outputs are labelled with their types; "the Acme webservice" described in this paragraph can be visualized as:
 
 #+attr_latex: :width 100px
@@ -56,7 +55,7 @@ Names with an empty list of inputs are therefore called *named resources*[fn:poi
 The relationships identified by names must be *deterministic*: input resources which are equivalent will result in equivalent outputs. This may seem to make them too strict to be useful. Recall, however, that equivalence is relative to the resource type, a domain-specific notion; depending on how high level the notions of equivalence are there may be quite a bit of leeway in exactly how the desired resources are instantiated.
 
 We still sometimes will want to use names which identify a specific resource only in the specific context of a user of that name, such as "the standard input stream" (which is a different input stream for different processes) or "today's prod pipeline run" (which is different depending on the day), which isn't feasible with determinism alone. For this case, we also allow *contextual* names, ones whose outputs depend on some aspect of the caller's context, which we model by the name taking a special "context" resource type at the input. "Resources" of this type can be roughly thought of as "the state of the world from some particular perspective"; they are always ultimately instantiated with a (unique) "resource" by the caller from /outside/ of the system. So "the standard input stream" takes in an instantiation of "the state of the world from the perspective of this process" and outputs a readable file stream. Because each top-level instantiation is unique, contextual names are essentially unrestricted with respect to determinism, so long as the lack of determinism can be captured in the context.
-*** Substitution
+** Substitution
 Once we've generalized names to refer to relationships between resources, we may want to substitute the outputs of one name for the inputs of another. *Substitution*[fn:1-comp] is the creation of a new name that relates the inputs of some names to the outputs of others by pairing the outputs of the first with the inputs of the second. We might have a contextual name for "the latest Acme revision", a name to build the Acme source and produce its docs and binaries, and a (non-contextual) name for a pristine acme database, and compose them all with the "Acme webservice" name to get a name like "the Acme webservice using the executable compiled from the latest code, the pristine test db, and some provided config file". In the visual notation, this would look like:
 
 #+attr_latex: :width 200px
@@ -86,7 +85,7 @@ Many names can themselves be cheaply compared for equality by being associated w
 [fn:points] /These/ are the points of the relevant 0-cell. Not every resource has a name that fits the requirements of names generally, at least not obviously so, so while every named resource corresponds to some resource the converse isn't true.
 [fn:1-comp] This is (unbiased) composition of the 1-cells, including tensoring/composing along 0-cells (i.e. projections).
 [fn:cut-elim] This is "cut elimination" of the underlying multicategory
-**** Technical note: Structural rules
+*** Technical note: Structural rules
 The rules for names given so far technically imply very strict resource management: Every resource must be used, exactly once, in order. There are some cases where this is necessary for correctness. Consider the case where a name depends on three input streams that gets instantiated with three pipes each filled sequentially by the same process; the first pipe must be completely read from before the process will start filling the second one, so the process instantiating the name must consume it first, and the data streams can be arbitrarily long so they cannot in general be duplicated. In most cases, however, we can relax this through any combination of the following three schemes for *[[https://en.wikipedia.org/wiki/Substructural_type_system][structural names]]*:
 
 #+attr_latex: :width 200px
@@ -100,7 +99,7 @@ In addition to ensuring correctness in rare cases, these annotations can also be
 
 [fn:ref] Often by reference!
 [fn:one-sided] In principle we could restrict exchange in only one direction, resulting in a one-way "barrier" to reorders.
-*** Reductions
+** Reductions
 We've already seen how the properties of names allow for efficient resource instantiation and combination. Unfortunately, the efficiency ultimately relies on identifying equivalent inputs, which is not always cheap and sometimes impossible. Consider the compute pipeline. A "run of the pipeline" might depend on the entire pipeline package and then project out the executable for each stage:
 
 #+attr_latex: :width 150px
@@ -134,7 +133,7 @@ Reductions can effectively change the input requirements; we can drop, duplicate
 [fn:lax] Thus our 1-composition is lax, not even weak
 [fn:red-substruct] In particular, we can't drop a relevant wire unless we already used the resource before identifying/following the reduction, we can't retain an affine wire unless we haven't used it before identifying/following the reduction, and the evident but verbose rules for ordered wires apply as well.
 [fn:ml] Note that this could be arbitrarily complex; we could e.g. have some ML-based "fuzzy matching" on the inputs and an extra model state input, if we have some learned notion of when results are going to be "close enough" based on the input closeness.
-*** Namespaces
+** Namespaces
 Implicit in the whole discussion so far is that we are describing an open system: you can freely add new resource types, new names, new reductions, so long as they meet the requirements. Unfortunately, proving or enforcing those requirements is in general infeasible. Therefore, for safety purposes, the system as a whole is conceptually partitioned into multiple *namespaces*, each of which has control over only the names and reductions within it. If one namespace does violate the rules, other namespaces (or users) are only impacted in contexts where they use names from that namespace.
 
 Namespaces are also the locus of caching, including distributed caching and reductions. Namespaces can keep previous results in a *store* or *forward* results from another namespace (say, on another machine). A namespace can also identify reductions for any of its names.
@@ -144,16 +143,16 @@ In order to have caching/reduction for composite names whose substitutions cross
 If one namespace is to use the spelling of names connected to its inputs as part of a caching scheme, it needs some way to get a spelling for a given name that it can trust even if it comes from a different untrusted namespace. We can address this by having namespaces as a resource type and a *namespace of namespaces*. A namespace need not trust all of its peers so long as it trusts some root namespace namespace to give a unique /name/ to its peers that it can include in its caching. This can also be used for overlaying optimization or instrumentation; we might have a namespace of namespaces that says "for any name in the namespaces I expose, I'm first going to check this reduction cache I trust to see if it reduces, and only forward on to the underlying namespace if not", which would among other things allow different users on the same machine to have their own trusted 3rd party caches without requiring mutual trust. This can also be used to bootstrap the system; much like filenames are usually relative to some ambient root or current directory, most names will be relative to some ambient namespace namespace that provides the default set of namespaces for the user or the system.
 
 [fn:anywhere] Technically we could safely allow namespaces to reduce based on what comes /after/ as well. But until a use case arises this allows for a much more straightforward and efficient execution algorithm.
-** Applications
+* Applications
 In this section, we'll survey a non-exhaustive list of possible applications of nomia. Keep in mind that a key feature is that names and substitution can operate across domains, so we should expect synergy between these when multiple are implemented!
 
-*** Content-addressed storage
+** Content-addressed storage
 Any time we have some resource type defined by its contents and those contents are cheap enough to enumerate, we can build a content-addressed namespace around it. The typical example is immutable files: given any file, we can build a named resource whose contents match that file's at one read-through and whose spelling is a direct hash of the contents. We can also build contextual resources based on handles to the resource in question, e.g. we may have a name ~stdin~ that takes file descriptor 0 from the context, starts reading through it and saving the file to the store, and when it's done emits a reduction to the named resource corresponding to the file just saved.
 
 There are many many systems implementing content-addressed storage for files, including [[https://git-scm.com/][git]]'s object store and the [[https://ipfs.io/][IPFS]] distributed file system. These could be reimplemented as nomia namespaces, or in cases like IPFS nomia may reuse its protocols for effective distribution and storage. These systems almost always require you to fully load some resource into the storage before you can fully use it, while with nomia we can treat as-yet unloaded files the same as already cached ones.
 
 It is expected that many namespaces will have their names reduce to some content-addressed named resource when it's feasible to do so, as this allows sharing of the underlying storage mechanisms and enables reuse when two potentially very different processes result in the same outcome.
-*** Package management
+** Package management
 Fully reproducible efficiently shared package environments are a core use case of nomia. The seed of nomia's design comes from [[https://nixos.org/][Nix]], a system that provides many of the benefits of nomia specific to the package management domain:
 
 + Nix has content-addressed storage, extended from regular files to the subset of directories that is needed to represent full packages
@@ -172,7 +171,7 @@ Together with an isolation mechanism to ensure that nothing unlisted is used, th
 + Allowing for secret files to exist in appropriately restricted namespaces, when building system configurations.
 
 [fn:fixed] Arguably Nix already has reductions in the single case of fixed-output derivations; they (statically) reduce to the fixed output file with the appropriate hash. This allows for e.g. nix-prefetch-url to work without running a derivation.
-*** Unison
+** Unison
 [[https://www.unisonweb.org/][Unison]] is an in-development programming language whose core features can be seen as special cases of nomia. Unison has immutable content-addressed /expressions/, based on hashing of the language's AST (up to alpha equivalence). This allows for:
 
 + Implicit incremental compilation/evaluation. When Unison needs to evaluate some expression, it can very cheaply determine if it already has, or if it has evaluated some subexpression, and only needs to compile and compute what has changed.
@@ -186,13 +185,13 @@ Nomia can extend this by:
 + Enabling some form of this functionality for arbitrary languages. Without significant work this would have to be restricted to the module level, but it would still allow the implicit recompilation and code distribution for any language
   + In any context where we can guarantee evaluation is pure (e.g. safe Haskell, or a trusted promise), we can cache evaluation as well
 + Allowing alternate equivalence classes of expressions. If you update some function to make it more efficient but can prove (or, if trusted, assert) that it has the same behavior, the evaluation cache could use results from either version and older code could be automatically upgraded
-*** Service orchestration
+** Service orchestration
 By treating services as resources, nomia can provide an immutable infrastructure-style approach toward service orchestration. Inter-service dependencies can be modelled as inputs, which are substituted by giving one service a capability to another; if we depend on a service that is the same as one already deployed, we don't need to deploy it again. This shares some properties with [[https://getnelson.io/][Nelson]], an orchestration tool that leverages semantic versioning and explicitly configured dependencies to achieve the same outcome in a container-based environment.
-*** Compute pipelines
+** Compute pipelines
 By modelling computation results as resources, individual stages as primitive names, and compute graphs as composed names, we can automatically orchestrate arbitrarily complex compute pipelines with safe caching and reuse. The same computation definition can be easily transformed to run locally threaded in-process or across hundreds of machines. We can capture batch processes or system state in contextual inputs that then reduce to non-contextual ones once accessed, thus automatically sharing work without an a priori notion of what has or hasn't changed.
-*** Continuous integration
+** Continuous integration
 A specification for continuous integration can be a name that composes all of the relevant projects together, and by combining contextuality and reduction we can capture notions like "the latest version of each dependency" without doing unnecessary new work. Test results can be seen as their own resource and potentially named independently of build products, with parallel computation possible if applicable.
-** Engineering standards
+* Engineering standards
 As an aspiring foundational component of nearly every system, it is vital that nomia be engineered to very high standards. Specific principles include:
 
 + Specification. The system must have clear precise semantics, library interfaces must be fully documented, formats and protocols spelled out in detail. It should be possible based on specifications alone to reimplement any part of the system compatibly, or even the whole.
@@ -202,61 +201,32 @@ As an aspiring foundational component of nearly every system, it is vital that n
 + Security. Nomia has security built in from the beginning, with clear boundaries between systems, a model assuming mutually untrusted implementations and users, and applying least privilege throughout. Wherever possible based on the underlying system primitives, nomia uses [[https://en.wikipedia.org/wiki/Object-capability_model][object capability]]-style access control, and where not possible it is emulated if not prohibitive. In addition to eliminating whole classes of privilege escalation bugs, this makes for a much cleaner programming model when coordinating between many systems.
 + Compatibility. Nomia is designed for future enhancements wherever possible, and adheres to strict protocol and API versioning to ensure any backwards incompatibilities that must happen are caught early.
 + Portability. The core components should work on most platforms, and cross-platform interaction should work smoothly.
-* Scarf tools
-Nomia alone is not a tool; it has no frontend, just interfaces. Users need some way to actually /use/ the functionality nomia provides, and Scarf can provide those.
-** Why Nomia and Scarf?
-There is remarkable synergy between nomia's project goals and Scarf's:
+* Near-term use cases
+The long term vision has nomia sinking into the background for the user, with all relevant tools having functionality to make them natively nomia aware. Your editor, your compiler, your shell, your browser, your application launcher all just understand nomia names and combine them appropriately. But that's a fairly far-off endpoint. This section lays out three near-term products we're building on top of nomia at Scarf. Beyond the initial prototype phase, all  of these Scarf tools will be built on top of a Scarf-agnostic core nomia implementation, so alternative uses for and interfaces to nomia can be built as that core progresses.
+** The Scarf environment manager
+The Scarf environment manager is a tool for distributing software and managing user and per-project development environments. It will include standard capabilities for adding and removing packages from environments by name (using the full flexibility of nomia to name packages and environments), declarative environment specifications that can be shared at the appropriate level of specificity to ensure the same environments on multiple machines, and where possible automatic integration with domain-specific environment specifications such as ~cabal~ files or ~requirements.txt~.
 
-+ Nomia's functionality will incentivize its prospective users to install Scarf's tooling to get access; Scarf's functionality will lead its prospective users into the nomia ecosystem
-+ Nomia provides a distribution model that can form the basis of Scarf's commercial platform; Scarf's commercial platform will provide the infrastructure and developer incentives to implement the model
-+ Nomia enables a uniform package management experience across ecosystems and platforms; Scarf can bring multiple ecosystems and platforms to the table
-+ Nomia's observability (or a namespace namespace that repoints URL lookups through Scarf) can be leveraged to collect information about how and where different packages are used; Scarf's collection of that information can guide nomia's development to best meet the needs of its users
-+ Nomia and Scarf are both heavily aligned around maintainers and developers, providing them the capabilities to effectively build and distribute their systems.
+Package specifications will integrate in with Nix and nixpkgs to leverage the enormous amount of work that has gone into that package set. Eventually we would like to work with the Nix community to have Nix itself built on top of nomia, with automatic integration in with anything else nomia-aware, including Scarf's tools.
 
-Each project would hugely benefit from the success of the other, and working as one we can drive that success together.
-** Potential user workflow
-The long term vision has nomia sinking into the background for the user, with all relevant tools having Scarf-provided functionality to make them natively nomia aware. Your editor, your compiler, your shell, your browser, your application launcher all just understand nomia names and combine them appropriately, with all the analytics available to Scarf. But that's an endpoint, not a starting point. Our initial target is package management, developer environments, and incremental compilation for some language such as Rust and/or Haskell.
-
-Wherever possible, we want to match the existing behaviors users are already used to. They should be able to install and uninstall packages by name, do the equivalent of ~cabal build~, use ~Cargo.lock~ for dependency pinning, etc. In order to integrate in with existing tooling as much as possible (e.g. editor integrations), these will ideally be drop-in command line replacements that can be added to the PATH. The Scarf tools would then translate those commands into appropriate nomia names under the hood and update the results appropriately. However, some cases may require more nomia-specific specification, such as:
-
-+ Declarative user environment specifications
-+ Using a specific GHC version
-+ Dependencies on internal projects (including local checkouts vs internal releases)
-+ Cross-language dependencies
-+ Ensuring everyone on the team is using the exact same package set all the way down
-
-In these cases, we will endeavor to provide simple domain-specific configurations. A declarative user environment could consist of, say, a git revision for the package repository and a list of package names from that repository, and we could even have the command line tool to add/remove packages keep such a configuration up to date. While the configuration languages are developing, however, we will also provide "escape hatches" to provide programs that directly speak nomia's protocols or, in the case of packages, Nix code to manipulate the package set. The goal will be to identify wherever these escape hatches are needed and find a semantically appropriate way to represent that in the higher level language, in particular limiting the amount of Nix code that needs to be written or understood as much as possible.
-
-Over time, we will endeavor to move as much as possible into upstream components (e.g. Cargo should speak nomia, possibly through a plugin) and the rest into standalone tools that are integrated into the rest of the ecosystem (e.g. your editor can understand the Scarf project environment file and set up its local environment appropriately).
-
-In the longer run, ideally we'd have as much of this as possible happen implicitly/on-demand. For example, we might have:
-
-+ "command not found"-style functionality to automatically fetch a package not yet installed, optionally including it as part of the environment and kept up to date with the rest
-+ Background rebuilding, or even the entire CI/CD process, on file save
-+ Shell automatically entering the environment for a specific project when opened, like direnv
-** Accompanying infrastructure
-In addition to nomia itself and the frontends, some additional infrastructure will be needed to fully realize the value:
-
-+ Scarf needs some way to capture and analyze the information identified by the frontends
-+ Scarf needs a forwarding server if it's going to act as a registry
-+ Scarf likely needs a cache, of packages at least
-+ Scarf needs some way to define/offer up a "blessed" package set
-
-Over time, Scarf could also offer other nomia-powered services, such as CI or even a PaaS offering.
+Package specifications will also likely integrate in with the Scarf gateway, allowing maintainers to host their own package definitions and binaries on third party systems while retaining control over the user access point.
+** The Scarf build tool
+The Scarf build tool will enable developers to build their projects as nomia resources, enabling cached builds, distributed builds, and sharing across teams and build modes where relevant. Where possible, the tool will be a drop-in replacements for the relevant build tools that already exist, translating existing CLIs into commands operating on nomia names and thereby leveraging the system transparently. As a starting point, we will likely choose a single language to support based on user requirements; Haskell and rust seem likely candidates.
+** The Scarf service manager
+The Scarf service manager will be a way to manage services and their inter-dependencies. While eventually we will likely aim for general deployment management, as a starting point we will focus on local development deployments on a single machine, similar to how Docker compose is often used.  Developers will be able to describe local services for their projects, including any service→service dependencies like databases and service→package dependencies like "postgres depends on the psql binary", and instantiate them, with any needed builds being performed automatically.
 * Feature roadmap
-This section lays out high level user functionality milestones based on the requirements of a scarf package manager and build tool, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
+This section lays out *one possible view* of near-term high level user functionality milestones, based on the requirements of the environment manager, the build tool, and the service manager, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
 
 A rough quarterly view based on the estimates:
 
 + Q1 will bring an initial tool and interface.
 + Q2 into Q3 will improve the foundations, replacing the Nix store dependency with nomia dependencies and allowing direct integration with Scarf's distribution channels.
-+ Q3 into Q4 will bring the full core nomia functionality, including user-extensible namespaces, integrated as appropriate with the package manager.
-+ Q4 into Q1 will bring incremental builds for a chosen language and a stable 1.0 release.
++ Q3 and Q4 will bring the full core nomia functionality, including user-extensible namespaces, integrated as appropriate with the environment manager.
++ Q1 2022 will bring either incremental builds for a chosen language or developer service management, depending on user requirements, and a stable 1.0 release.
 
-Note that with some small overhead we can do incremental builds before user-extensible namespaces, if desirable for the product roadmap at the time.
+Note that this roadmap is not in any way final!
 
 ** Initial Scarf CLI
-This milestone will bring the initial version of the Scarf package manager that users can start managing packages with. This will mainly be centered around providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this will require:
+This milestone will bring the initial version of the Scarf environment manager that users can start managing environments with. This will mainly be centered around providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this will require:
 
 + Specifying enough of the semantics of a future package environment resource namespace to guide the interface
 + Determining and implementing the command interface
@@ -267,9 +237,9 @@ This milestone will bring the initial version of the Scarf package manager that 
 
 Note that the initial version will work standalone as a client, but will eventually require integration in with Scarf infrastructure to provide needed functionality (e.g. Scarf package resolver, blessed package sets, caching, etc.)
 
-Depending on the desired functionality scope, I estimate 1-2 months.
+Time estimate: 1-2 months
 ** Immutable flat file namespace
-After this milestone, all flat file storage for the package manager will be implemented in an nomia namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
+After this milestone, all flat file storage for the environment manager will be implemented in an nomia namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
 
 As the first namespace, this feature requires implementing a lot of the basic functionality of namespaces generally:
 
@@ -288,8 +258,7 @@ And of integrating in with the command line tool:
 + Integration with Nix language primitives for adding files
 + Nix store → nomia namespace dependencies
 
-While the basic functionality of the namespace is quite simple, due to the number of technical prerequisites and basic decisions that need to be made to get there I estimate 1.5-3 months.
-
+Time estimate: 1.5-3 months
 ** Immutable filesystem management for packages
 After this milestone, the basic filesystem primitives needed for package management will be in place, as well as integration into Scarf's distribution channels if and when they are available. This includes:
 
@@ -302,7 +271,7 @@ Additional foundational work needed to support this includes:
 + Cross-namespace substitutions and reductions, requiring a namespace trust mechanism
 + Projections (e.g. treating a subdirectory as a directory, treating a file in a directory as a file for unpacking)
 
-Estimated time to completion of 1.5 months
+Time estimate: 1.5 months
 ** Building packages
 This milestone will provide the ability to define and build packages. After this milestone we should have no further reliance on the Nix store implementation. This includes:
 
@@ -312,7 +281,7 @@ This milestone will provide the ability to define and build packages. After this
 
 Ideally we will reuse existing sandboxing mechanisms for execution isolation, such as lightweight containers (or, where available, capsicum-style isolation).
 
-Estimated time of completion of 1.5 months, up to 2 if isolation is not reusable.
+Time estimate: 1.5 months, up to 2 if isolation is not reusable.
 ** Namespace namespaces
 After this milestone, the full "core" functionality set of nomia will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
 
@@ -321,14 +290,16 @@ After this milestone, the full "core" functionality set of nomia will be availab
 + Mechanism for user-configurable canonical namespace spellings
 + Adapting existing namespaces to use dynamic trust mechanism where appropriate
 
-If desired for package manager functionality, this will also include:
+If desired for environment manager functionality, this will also include:
 
 + Nix language access to alternate namespaces
 + Specific package namespaces for specific ecosystems (e.g. an NPM package namespace)
 
-Estimated time of completion 2-3 months, depending on functionality.
+Time estimate: 2-3 months
 ** Incremental builds
 After this milestone, we will be able to showcase integrated incremental distributed builds for a language of choice. The details of this are highly dependent on the language and integration decided, but is likely to end up in the 1.5-3 months range for the first language.
+** Local deployment management
+After this milestone, we will be able to showcase service management through local deployments. The specific functionality is yet to be determined, but is likely to end up in the 1.5-3 months range for the first version.
 ** Stabilization
 Before we can declare an initial "stable" 1.0 release, we will need to make sure all of our bases are covered. Much of this is likely to be covered along the way as part of other milestones, but there will probably be some level of mop-up when we are otherwise feature-ready.
 
