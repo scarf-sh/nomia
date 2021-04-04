@@ -9,13 +9,13 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    inkscape:export-ydpi="100"
    inkscape:export-xdpi="100"
-   inkscape:export-filename="/home/shlevy/documents/Scarf/elvysh-whitepaper/acme-hidden.png"
+   inkscape:export-filename="/home/shlevy/documents/Scarf/nomia/whitepaper/acme-hidden.png"
    width="210mm"
    height="297mm"
    viewBox="0 0 210 297"
    version="1.1"
    id="svg8"
-   inkscape:version="1.0 (4035a4fb49, 2020-05-01)"
+   inkscape:version="1.0.2 (e86c870879, 2021-01-15)"
    sodipodi:docname="acme-hidden.svg">
   <defs
      id="defs2">
@@ -112,15 +112,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="203.52533"
+     inkscape:cx="7.0506594"
      inkscape:cy="438.78169"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
      showgrid="false"
-     inkscape:window-width="1920"
-     inkscape:window-height="1046"
-     inkscape:window-x="0"
+     inkscape:window-width="2560"
+     inkscape:window-height="1406"
+     inkscape:window-x="1920"
      inkscape:window-y="0"
      inkscape:window-maximized="0" />
   <metadata
@@ -310,8 +310,8 @@
          id="tspan2366"
          sodipodi:role="line">Pristine DB</tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:2.1199999,1.05999995;stroke-dashoffset:0"
-       d="M 24.114027,70.714192 H 150.58569 V 136.99725 H 191.0872 V 189.786 H 23.354632 Z"
+       style="fill:none;stroke:#ff0000;stroke-width:0.300433;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.40346, 1.20172999999999996;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 24.114027,36.743837 H 150.58569 V 121.93699 H 191.0872 V 189.786 H 23.354632 Z"
        id="path1070" />
   </g>
 </svg>
