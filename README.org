@@ -17,7 +17,7 @@ In the Nomia-powered future, you will be able to:
 2. Make a change and point your browser to ~nomia://(client-projects:acme):server/login~ and have the Acme server built (reusing the results of the latest CI build for unchanged files), the service and its dependencies started, and the login page for your local instance loaded into your browser.
 3. Tell your deployment tool to modify the staging environment with the replacement ~acme-server => (client-projects:acme):server~ and have the local ~(client-projects:acme):server~ automatically reduced to the more deterministic ~cmake:c++-project(input: immutable-filesystem-object?hash=9368819aaf6f619ec109e544b56ca05a21375ca671d00dbf7532e0b69aded39a)~ and the results shipped off to your staging environment with all downstream dependencies pointing to your changed service.
 
-Note that Nomia is driving name resolution and resource acquisition every step of the way.
+Behind the scenes of each step, Nomia will be driving name resolution and resource acquisition.
 
 # TODO the gif story should go here, maybe replacing the previous 3 step description
 
