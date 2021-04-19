@@ -239,6 +239,8 @@ A *substitution specification* identifies an input to be substituted. It consist
 2. A name reference.
 3. An optional output specifier, which is an identifier string, preceded by a ~.~. If omitted, there must either only be one output of the relevant name or the desired output is identified by the context.
 
+We will likely eventually support a list or dictionary of names at a single input.
+
 A *substitution* identifies a name with (some of) its inputs substituted. It consists of:
 
 1. A name reference
