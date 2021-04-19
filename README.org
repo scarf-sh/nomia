@@ -1,6 +1,6 @@
 #+TITLE: Nomia
 
-A system for precise, efficient resource management across every domain and resource type. 
+A system for precise, efficient resource management across every domain and resource type.
 
 * Introduction
 Nomia provides a systematic mechanism for giving names to any kind of resource, composing those names together to identify new composite resources, and acquiring access to the resources thus identified. These capabilities allow for precise, efficient resource management, all using a single unified abstraction applicable across domains. Nomia solves the problem of cache invalidation by solving the problem of naming things, and that's just for starters!
