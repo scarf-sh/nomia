@@ -1,0 +1,121 @@
+This document lays out *one possible view* of near-term high level user functionality milestones, based on the requirements of the Environment Manager, the build tool, and the service manager, which in turn drive the internal technical details needed to implement them. Given that we can only rely on a single developer at the moment, the roadmap here is linear, but to the extent others (either at Scarf or in the open source community) get involved there are significant opportunities for parallelism, especially later in the roadmap.
+
+A rough quarterly view based on the estimates:
+
++ Q1 will bring an initial tool and interface.
++ Q2 into Q3 will improve the foundations, replacing the Nix store dependency with Nomia dependencies and allowing direct integration with Scarf's distribution channels.
++ Q3 and Q4 will bring the full core Nomia functionality, including user-extensible namespaces, integrated as appropriate with the Environment Manager.
++ Q1 2022 will bring either incremental builds for a chosen language or developer service management, depending on user requirements, and a stable 1.0 release.
+
+Note that this roadmap is not in any way final!
+
+* Initial Scarf CLI
+This milestone will bring the initial version of the Scarf Environment Manager that users can start managing environments with. This will mainly focus on providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this will require:
+
++ Specifying enough of the semantics of a future package environment resource namespace to guide the interface.
++ Determining and implementing the command interface.
++ Determining and implementing the configuration interface.
++ Integration with the Nix expression language and nixpkgs.
++ Temporary integration with the Nix store to instantiate packages.
++ Initial project scaffolding (repos, project structure, tests, CI/CD, etc.).
+
+Note that the initial version will work standalone as a client, but will eventually require integration with Scarf infrastructure to provide needed functionality (e.g. Scarf package resolver, blessed package sets, caching, etc.)
+
+Time estimate: 1-2 months
+* Immutable flat file namespace
+After this milestone, all flat file storage for the Environment Manager will be implemented in a Nomia namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
+
+As the first namespace, this feature requires implementing a lot of the basic functionality of namespaces generally:
+
++ Garbage collection and roots
++ Capability acquisition protocol
++ Hash algorithm integration
++ File storage
++ Validity database (if filesystem is inadequate)
++ Observability interfaces (production and consumption)
++ Scheduling/event loop management
++ Protocols for instantiating a name and emitting/consuming reductions
++ Library interfaces to protocols
+
+And also requires integrating in with the command line tool:
+
++ Integration with Nix language primitives for adding files
++ Nix store → Nomia namespace dependencies
+
+Time estimate: 1.5-3 months
+* Immutable filesystem management for packages
+After this milestone, the basic filesystem primitives needed for package management will be in place, as well as integration into Scarf's distribution channels if and when they are available. This includes:
+
++ Content-addressed directories, based on a canonical serialization, that allow for at least readable and executable files
++ Names for fetching (downloading a URL, cloning a git repository)
++ Names for unpacking (unzip, untar)
+
+Additional foundational work needed to support this includes:
+
++ Cross-namespace substitutions and reductions, requiring a namespace trust mechanism
++ Projections (e.g. treating a subdirectory as a directory, treating a file in a directory as a file for unpacking)
+
+Time estimate: 1.5 months
+* Building packages
+This milestone will provide the ability to define and build packages. After this milestone we should have no further reliance on the Nix store implementation. This includes:
+
++ Reference management for "run-time" substitutions (package A depending on package B).
++ Self reference-aware content-addressable storage (e.g. if an executable unavoidably hard-codes a path to its own directory, we need to determine the path based on the contents /modulo/ that self-reference).
++ Names for safely executing given programs in a given environment (including any dependent namespaces), with protocols for registering references, outputs, reductions, etc. as well as optional sandboxing. Spelling based on the build recipe's contents.
+
+Ideally we will reuse existing sandboxing mechanisms for execution isolation, such as lightweight containers (or, where available, capsicum-style isolation).
+
+Time estimate: 1.5 months, up to 2 if isolation is not reusable.
+* Namespace namespaces
+After this milestone, the full "core" functionality set of Nomia will be available, allowing integration of user-defined namespaces and names into the existing system. This requires:
+
++ Names to spin up a local service, reusing existing service management capabilities.
++ Protocol for name validation of a potentially untrusted namespace.
++ Mechanism for user-configurable canonical namespace spellings.
++ Adapting existing namespaces to use dynamic trust mechanism where appropriate.
+
+If desired for Environment Manager functionality, this will also include:
+
++ Nix language access to alternate namespaces
++ Specific package namespaces for specific ecosystems (e.g. an NPM package namespace)
+
+Time estimate: 2-3 months
+* Incremental builds
+After this milestone, we will be able to showcase integrated incremental distributed builds for a language of choice. The details of this are highly dependent on the language and integration decided, but is likely to end up in the 1.5-3 months range for the first language.
+* Local deployment management
+After this milestone, we will be able to showcase service management through local deployments. The specific functionality is yet to be determined, but is likely to end up in the 1.5-3 months range for the first version.
+* Stabilization
+Before we can declare an initial "stable" release, we will need to make sure all of our bases are covered. Much of this is likely to be covered along the way as part of other milestones, but there will probably be some level of mop-up when we are otherwise feature-ready.
+
++ Documentation
+  + Reference
+  + Protocol specs
+  + Tutorials
+  + Cookbooks/basic how-tos
+  + Library/code documentation
+  + Catalog of core resource types and their affordances
++ Library interfaces to all functionality
+  + Ideally at least C ffi + Rust
++ Testing and other validation
++ Nomia self-hosting as a package
++ Project governance structure
++ Project branding/naming
++ Analytics that work well with privacy requirements
+
+** Future enhancement ready
+There are a number of features which need not be implemented before the initial stable version, but we should ensure are possible to implement without significantly breaking compatibility with the stable release:
+
++ Protocol enhancements
++ Remote builders
++ Namespace forwarding
++ Rare special features of Nix derivations (e.g. structuredAttrs)
++ Portability to other systems
++ In-progress resource consumption, e.g. start using a file while it's being downloaded
++ Lazy resource instantiation, e.g. only instantiating a sub-directory when accessed
++ Push-based names, e.g. a name that watches a file and triggers a cascade leading to recompilation when it changes
++ Generic caching, e.g. TTL cache
++ Storage and scheduler flexibility, e.g plugging in IPFS or using a new event loop
++ substructural annotations and optimizations
++ User/system reduction databases
++ namespace-namespace overlays
++ Centralized orchestration/optimized resource management
