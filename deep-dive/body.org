@@ -189,6 +189,86 @@ Namespace resources are implemented as computational components (in-process modu
 - Names can be represented as plain data, whether by direct representation of atomic names or by composing existing names into substitutions. Compositions can include resolved names.
 - Names can be resolved to resolved names. At resolution time, any contextual inputs must be satisfied. Name resolution happens relative to some root namespace of namespaces.
 - The static spelling of a non-contextual name can be determined from the name.
+**** Name syntax
+# TODO Proper grammar
+This section details the current (provisional) plain-text syntax for names. Additional domain-specific structured syntaxes, such as a JSON syntax, are expected as needed.
+
+The syntax is built up recursively.
+
+The syntax supports *variables*, required for arbitrary substitution graphs. Variables are simply a ~$~ followed by an identifier string, such as ~$baz~.
+
+The name syntax can also reference resolved names. *Resolved name references* are a ~@~ followed by an identifier string, such as ~@foo~. The specific resolved name must be specified at resolution time.
+
+We start with *builtin namespace identifiers*. A builtin namespace identifier is the most basic way to look up a namespace within the ambient namespace of namespaces that the name will be resolved in. It consists of:
+
+1. An identifier string, like ~scarf-pkgset~. This is essentially opaque, given its specific meaning by hard-coded (or explicitly configured) lookup semantics in the resolving namespace of namespaces
+2. An optional set of parameters, separated from the identifier by a ~?~ and represented by ~&~-separated ~key=value~ pairs. These allow using structured data in addition to the opaque identifier to specify the desired namespace. Currently values are treated as character strings, though it is expected that a small set of other types (integers, lists, dictionaries, etc.) may be supported eventually.
+
+Thus, ~scarf-pkgset~ or ~nixpkgs?ref=master&revision=905ecb920ed~ would be syntactically valid builtin namespace identifiers.
+
+We can then build *namespace identifiers*, the general way to locate a namespace within a namespace of namespaces. A namespace identifier is either:
+
+- A builtin namespace identifier
+- Another name. This name must be a named resource whose type is a namespace, i.e. it must have no inputs and a single namespace output. The name may be contextual, in which case its context must be provided at resolution time. Named namespace identifiers are enclosed in parentheses.
+
+Thus each of our builtin namespace identifiers above would be a namespace identifier, as would ~(EXP)~ where ~EXP~ is any representation of a valid name in that scope.
+
+Next we have *name identifiers*. A name identifier identifies a name /within/ a namespace. It consist of:
+
+1. An identifier string, like ~vim~. This is essentially opaque, given its specific meaning by the namespace providing it.
+2. An optional set of parameters, separated from the identifier by a ~?~ and represented by ~&~-separated ~key=value~ pairs. These allow using structured data in addition to the opaque identifier to specify the desired name. Currently values are treated as character strings, though it is expected that a small set of other types (integers, lists, dictionaries, etc.) may be supported eventually.
+
+Thus, ~vim?version=8.2~ would be a syntacitcally valid name identifier.
+
+Now we can build *atomic names*. An atomic name is a single name, without any composition, located within a specific namespace. It consist of:
+
+1. An optional namespace identifier followed by a ~:~. If omitted, the context in which the atomic name is used must have an implicit default namespace associated with it. For example, the Scarf Environment Manager might look up packages in ~scarf-pkgset~ by default.
+2. A name identifier.
+
+Thus, ~vim~, ~scarf-pkgset:vim~, or ~(foo:bar):baz?quz=10~ are syntactically valid atomic names.
+
+A *name reference* references some name in a given context. It is either:
+
+- An atomic name
+- A name
+- A variable bound to a name
+
+A *substitution specification* identifies an input to be substituted. It consist of:
+
+1. An optional input name, which is an identifier string, followed by a ~:~ and a space, such as ~bash:~ . If omitted, there must either only be one input to substitute or the relevant input is identified positionally. We will probably eventually support nested input names, referring to inputs of inputs.
+2. A name reference.
+3. An optional output specifier, which is an identifier string, preceded by a ~.~. If omitted, there must either only be one output of the relevant name or the desired output is identified by the context.
+
+A *substitution* identifies a name with (some of) its inputs substituted. It consists of:
+
+1. A name reference
+2. An optional sequence of substitution specifications, surrounded by parentheses and separated by ~,~.
+
+Thus, ~foo:bar?baz=10(bash: scarf-pkgset:bash(glibc: @glibc.dev), src: $src)~ would be a substitution if ~$src~ is bound, requiring ~@glibc~ to be bound to some resolved name that has a ~dev~ output.
+
+In full generality, a name can be an arbitrary directed graph with named edges, including cycles[fn:glibc]. To support this, we need syntax for a declaring a node in the graph, together with its inputs. Each *node declaration* consists of:
+
+1. An optional variable name binding, followed by an ~=~.
+2. A substitution.
+
+~x = foo:bar?baz=10(bash: scarf-pkgset:bash(glibc: @glibc), src: $src)~ is a node declaration if ~$src~ is in scope.
+
+Finally, a name is simply a sequence of node declarations. Any inputs not specified become inputs of the composite name, and any outputs not connected elsewhere become outputs of the composite name. Names can come in three forms:
+
+- A substitution. In this case, no variables are bound, and the composition graph is an acyclic tree.
+- ~let DECLS in SUBST~, where ~DECLS~ is a ~;~-separated sequence of node declarations and ~SUBST~ is a substitution. Any variables bound in the declarations are available in the body of /any/ declaration and the substitution, even those preceding the variable binding or the body bound to the variable itself. The intent of this form is that ~SUBST~ be the "last" name in a potentially complex chain, though this will probably not be enforced.
+- ~compose DECLS~, where ~DECLS~ is a ~;~-separated sequence of node declarations. Any variables bound in the declarations are available in the body of /any/ declaration, even those preceding the variable binding or the body bound to the variable itself.
+
+Note that while many structural rules can be implicitly inferred (e.g. referencing some output twice requires a contraction), we will need some syntax for explicit usage of structural rules in some cases. That hasn't been decided, but is expected to be another form of node declaration.
+
+So all of the following are names:
+
+- ~scarf-pkgset:vim~
+- ~let bash = scarf-pkgset:bash(glibc: @glibc.dev) in scarf-pkgset:vim(bash: $bash)~
+- ~compose foo = bar:baz; quz($foo.secondary); waldo = fred:plugh($foo.primary)~
+
+
+[fn:glibc] For example, ~glibc~ needs to reference a POSIX shell to implement the ~system(3)~ function, and ~bash~ needs to reference a C library for the capabilities it exposes. The ideal way to resolve this is to have ~glibc~ depend on ~bash~ built against that /same/ ~glibc~, in a cycle, with infinite recursion avoided because ~bash~ doesn't need to call ~system~ in order to load its needed symbols from ~glibc~.
 *** Resolved names
 - Listeners for events, including name reductions and resource lifecycle events, can be attached to a resolved name
 - Resolved names can be passed to other processes or systems without exposing the underlying namespaces in full
