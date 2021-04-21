@@ -241,7 +241,7 @@ in
 which is equivalent to:
 #+BEGIN_SRC
 compose
-  $name_1 = namespace-id-2:name-id-2; 
+  $name_1 = namespace-id-2:name-id-2;
   namespace-id:name-id(input: $name_1.output)
 #+END_SRC
 
