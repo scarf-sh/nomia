@@ -32,6 +32,6 @@ Nomia is in early active development, and we are fleshing out the documentation 
 - This [[https://about.scarf.sh/post/announcing-nomia-and-the-scarf-environment-manager][blog post]] announces Nomia, and relates it to [[https://about.scarf.sh][Scarf]]'s mission and related work.
 - The [[https://github.com/scarf-sh/scarf][Scarf CLI]] is currently implemented on top of an internal prototype of basic Nomia capabilities. These will be reimplemented as standalone components (likely in Rust) and moved into this repository.
 * Community
-Nomia's community currently centers around this GitHub repository and our [[https://discord.gg/gFUMu3Xmqa][Discord server]]. We hope to see you there!
+Nomia's community currently centers around this GitHub repository and our [[https://discord.gg/mSc4yXF2RV][Discord server]]. We hope to see you there!
 
 [[https://static.scarf.sh/a.png?x-pxid=65d365d1-2d51-4fe9-a193-b5332849e5f6]]
