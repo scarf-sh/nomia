@@ -11,7 +11,7 @@ Compose. Name ::= "compose" Declarations ;
 Nullary. Substitution ::= NameRef ;
 Multiary. Substitution ::= NameRef "(" SubstitutionSpecs ")" ;
 
-Bound. Declarations ::= "$" Identifier "=" Substitution ;
+Bound. Declarations ::= Identifier "=" Substitution ;
 Unbound. Declarations ::= Substitution ;
 separator nonempty Declarations ";" ;
 

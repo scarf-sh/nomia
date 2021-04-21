@@ -140,7 +140,7 @@ We've already seen how the properties of names allow for efficient resource inst
 
 Since you've changed one module in the pipeline, the whole package has changed. If your change only impacts, say, the last stage of the pipeline, the individual stages might be able to recognize that their executables are unchanged. But after the first stage, this recognition wouldn't result in reuse: the first stage may have output cached results, but other stages may not be able to cheaply detect that the output is the same and so would have to rerun.
 
-For these cases, we have *reductions*[fn:2-cell], relationships between /names/ in which the reduced-to name is more refined and can stand in for the reduced name to yield an equivalent resource. We might, for example, learn that "build the pipeline" with the modified inputs reduces to a particular set of 3 named executable resources and then infer a reduction of the whole pipeline run:
+For these cases, we have *reductions*[fn:2-cell], relationships between /names/ in which the reduced-to name is more refined and can stand in for the reduced name to yield an equivalent resource. We might, for example, learn that "build the pipeline" with the modified inputs reduces to a particular set of 3 named executable resources, and then be able to1 infer a reduction of the whole pipeline run:
 
 #+attr_latex: :width 200px
 [[./pipeline-proj-red.png]]
@@ -224,7 +224,7 @@ compose
   namespace-id?param1=value1&param2="value 2":name-id?param3=value3(
     input: $name_1.output
   );
-  $name_1 = namespace-id-2:name-id-2
+  name_1 = namespace-id-2:name-id-2
 #+END_SRC
 
 In this form, the name is a sequence of declarations of names with their inputs specified, possibly bound to variable names. These variable names can then be referenced anywhere else within that declaration sequence, including beforehand or even within the body of the declaration of the variable in question. This particular example is semantically equivalent to the first, but in general names in this form need not be representable as trees.
@@ -233,7 +233,7 @@ As syntax sugar for the case where every name in the substitution except one has
 
 #+BEGIN_SRC
 let
-  $name_1 = namespace-id-2:name-id-2
+  name_1 = namespace-id-2:name-id-2
 in
   namespace-id:name-id(input: $name_1.output)
 #+END_SRC
@@ -241,13 +241,13 @@ in
 which is equivalent to:
 #+BEGIN_SRC
 compose
-  $name_1 = namespace-id-2:name-id-2;
+  name_1 = namespace-id-2:name-id-2;
   namespace-id:name-id(input: $name_1.output)
 #+END_SRC
 
 Finally, a name can reference a resolved name via a resolved name variable, of the form ~@foo~, anywhere a name would otherwise be used. In this case, when the new name is resolved, all resolved name variables must be assigned to a specific resolved name.
 
-[fn:glibc] For example, ~glibc~ needs to reference a POSIX shell to implement the ~system(3)~ function, and ~bash~ needs to reference a C library for the capabilities it exposes. The ideal way to resolve this is to have ~glibc~ depend on ~bash~ built against that /same/ ~glibc~, in a cycle, with infinite recursion avoided because ~bash~ doesn't need to call ~system~ in order to load its needed symbols from ~glibc~.
+[fn:glibc] For example, ~glibc~ needs to reference a POSIX shell to implement the ~system(3)~ function, and ~bash~ needs to reference a C library1. The ideal way to resolve this is to have ~glibc~ depend on ~bash~ built against that /same/ ~glibc~, in a cycle, with infinite recursion avoided because ~bash~ doesn't need to call ~system~ in order to load its needed symbols from ~glibc~.
 *** Resolved names
 - Listeners for events, including name reductions and resource lifecycle events, can be attached to a resolved name.
 - Resolved names can be passed to other processes or systems without exposing the underlying namespaces in full.
