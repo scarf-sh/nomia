@@ -25,8 +25,8 @@ Behind the scenes of each step, Nomia will be driving name resolution and resour
 * Documentation
 Nomia is in early active development, and we are fleshing out the documentation as we go. For now, the following resources are available:
 
-- The [[https://github.com/scarf-sh/nomia/releases/download/2.0/deep-dive.pdf][Deep Dive Into Nomia]] paper expands on the motivation for and the conceptual model underlying Nomia in detail.
-- The Nomia name representation is specified in the [[./name.cf][formal grammar]].
+- The [[https://github.com/scarf-sh/nomia/releases/download/2.0.1/deep-dive.pdf][Deep Dive Into Nomia]] paper expands on the motivation for and the conceptual model underlying Nomia in detail.
+- The Nomia name representation is specified in the [[https://github.com/scarf-sh/nomia/releases/download/2.0.1/name-grammar.pdf][formal grammar]].
 - The [[./roadmap.org][roadmap]] shows one possible near-term implementation plan.
 - This [[https://about.scarf.sh/post/announcing-nomia-and-the-scarf-environment-manager][blog post]] announces Nomia, and relates it to [[https://about.scarf.sh][Scarf]]'s mission and related work.
 - The [[https://github.com/scarf-sh/scarf][Scarf CLI]] is currently implemented on top of an internal prototype of basic Nomia capabilities. These will be reimplemented as standalone components (likely in Rust) and moved into this repository.

@@ -1,3 +1,5 @@
+entrypoints Name;
+
 comment "/*" "*/" ;
 
 -- TODO Need unicode identifier support before finalizing
@@ -5,19 +7,19 @@ comment "/*" "*/" ;
 token Identifier letter (letter | digit | '_' | '-' | '\'')* ;
 
 Tree. Name ::= Substitution ;
-LetIn. Name ::= "let" Declarations "in" Substitution ;
-Compose. Name ::= "compose" Declarations ;
+LetIn. Name ::= "let" [Declaration] "in" Substitution ;
+Compose. Name ::= "compose" [Declaration] ;
 
 Nullary. Substitution ::= NameRef ;
-Multiary. Substitution ::= NameRef "(" SubstitutionSpecs ")" ;
+Multiary. Substitution ::= NameRef "(" [SubstitutionSpec] ")" ;
 
-Bound. Declarations ::= Identifier "=" Substitution ;
-Unbound. Declarations ::= Substitution ;
-separator nonempty Declarations ";" ;
+Bound. Declaration ::= Identifier "=" Substitution ;
+Unbound. Declaration ::= Substitution ;
+separator nonempty Declaration ";" ;
 
-Formal. SubstitutionSpecs ::= Identifier ":" OutputRef ;
-Positional. SubstitutionSpecs ::= OutputRef ;
-separator nonempty SubstitutionSpecs "," ;
+Formal. SubstitutionSpec ::= Identifier ":" OutputRef ;
+Positional. SubstitutionSpec ::= OutputRef ;
+separator nonempty SubstitutionSpec "," ;
 
 Default. OutputRef ::= Substitution ;
 Specified. OutputRef ::= Substitution "." Identifier;
@@ -34,13 +36,13 @@ Builtin. NamespaceId ::= ParameterizedId ;
 Named. NamespaceId ::= "(" OutputRef ")" ;
 
 UnParameterized. ParameterizedId ::= Identifier ;
-Parameterized. ParameterizedId ::= Identifier "?" Params ;
+Parameterized. ParameterizedId ::= Identifier "?" [Param] ;
 
 -- TODO Support multiple types?
 Quoted. ParamValue ::= String ;
 -- TODO We should support more robust unquoted strings, but annoying to get the lexer to behave
 Unquoted. ParamValue ::= Identifier ;
-Param. Params ::= Identifier "=" ParamValue ;
-separator nonempty Params "&" ;
+Parameter. Param ::= Identifier "=" ParamValue ;
+separator nonempty Param "&" ;
 
 -- TODO Name metadata

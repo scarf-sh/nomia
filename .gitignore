@@ -1,3 +1,5 @@
 *.pdf
 *.tex
 *.png
+*.aux
+*.log

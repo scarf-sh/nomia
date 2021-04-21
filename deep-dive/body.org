@@ -196,7 +196,7 @@ Namespace resources are implemented as computational components (in-process modu
 - Names can be resolved to resolved names. At resolution time, any contextual inputs must be satisfied. Name resolution happens relative to some root namespace of namespaces.
 - The static spelling of a non-contextual name can be determined from the name.
 **** Name syntax
-The plain-text syntax for names is specified in a [[https://github.com/scarf-sh/nomia/blob/master/name.cf][formal grammar]]. Additional domain-specific structured syntaxes, such as a JSON syntax, are expected to be defined as needed.
+The plain-text syntax for names is specified in a [[https://github.com/scarf-sh/nomia/releases/download/2.0.1/name-grammar.pdf][formal grammar]]. Additional domain-specific structured syntaxes, such as a JSON syntax, are expected to be defined as needed.
 
 Informally, most names are of the form:
 
