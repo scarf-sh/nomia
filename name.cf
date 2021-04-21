@@ -1,0 +1,46 @@
+comment "/*" "*/" ;
+
+-- TODO Need unicode identifier support before finalizing
+-- TODO Should all of the uses of Identifier really be the same rules?
+token Identifier letter (letter | digit | '_' | '-' | '\'')* ;
+
+Tree. Name ::= Substitution ;
+LetIn. Name ::= "let" Declarations "in" Substitution ;
+Compose. Name ::= "compose" Declarations ;
+
+Nullary. Substitution ::= NameRef ;
+Multiary. Substitution ::= NameRef "(" SubstitutionSpecs ")" ;
+
+Bound. Declarations ::= "$" Identifier "=" Substitution ;
+Unbound. Declarations ::= Substitution ;
+separator nonempty Declarations ";" ;
+
+Formal. SubstitutionSpecs ::= Identifier ":" OutputRef ;
+Positional. SubstitutionSpecs ::= OutputRef ;
+separator nonempty SubstitutionSpecs "," ;
+
+Default. OutputRef ::= Substitution ;
+Specified. OutputRef ::= Substitution "." Identifier;
+
+Atomic. NameRef ::= AtomicName ;
+Variable. NameRef ::= "$" Identifier ;
+Resolved. NameRef ::= "@" Identifier ;
+Nested. NameRef ::= "(" Name ")";
+
+Qualified. AtomicName ::= NamespaceId ":" ParameterizedId ;
+Unqualified. AtomicName ::= ParameterizedId ;
+
+Builtin. NamespaceId ::= ParameterizedId ;
+Named. NamespaceId ::= "(" OutputRef ")" ;
+
+UnParameterized. ParameterizedId ::= Identifier ;
+Parameterized. ParameterizedId ::= Identifier "?" Params ;
+
+-- TODO Support multiple types?
+Quoted. ParamValue ::= String ;
+-- TODO We should support more robust unquoted strings, but annoying to get the lexer to behave
+Unquoted. ParamValue ::= Identifier ;
+Param. Params ::= Identifier "=" ParamValue ;
+separator nonempty Params "&" ;
+
+-- TODO Name metadata
