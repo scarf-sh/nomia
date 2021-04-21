@@ -2,15 +2,15 @@ This document lays out *one possible view* of near-term high level user function
 
 A rough quarterly view based on the estimates:
 
-+ Q1 will bring an initial tool and interface.
++ Q1 has brought bring an initial tool and interface.
 + Q2 into Q3 will improve the foundations, replacing the Nix store dependency with Nomia dependencies and allowing direct integration with Scarf's distribution channels.
 + Q3 and Q4 will bring the full core Nomia functionality, including user-extensible namespaces, integrated as appropriate with the Environment Manager.
 + Q1 2022 will bring either incremental builds for a chosen language or developer service management, depending on user requirements, and a stable 1.0 release.
 
 Note that this roadmap is not in any way final!
 
-* Initial Scarf CLI
-This milestone will bring the initial version of the Scarf Environment Manager that users can start managing environments with. This will mainly focus on providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this will require:
+* Initial Scarf CLI (complete)
+This milestone brought the initial version of the Scarf Environment Manager that users can start managing environments with. This mainly focused on providing a clean user interface for our first use cases, leveraging Nix under the hood to start. Technically, this required:
 
 + Specifying enough of the semantics of a future package environment resource namespace to guide the interface.
 + Determining and implementing the command interface.
@@ -19,9 +19,7 @@ This milestone will bring the initial version of the Scarf Environment Manager t
 + Temporary integration with the Nix store to instantiate packages.
 + Initial project scaffolding (repos, project structure, tests, CI/CD, etc.).
 
-Note that the initial version will work standalone as a client, but will eventually require integration with Scarf infrastructure to provide needed functionality (e.g. Scarf package resolver, blessed package sets, caching, etc.)
-
-Time estimate: 1-2 months
+Time needed: 3 months
 * Immutable flat file namespace
 After this milestone, all flat file storage for the Environment Manager will be implemented in a Nomia namespace. The namespace is a typical content-addressed file store. The only output resource type is an immutable readable regular file, where equivalence is determined by file contents.
 
