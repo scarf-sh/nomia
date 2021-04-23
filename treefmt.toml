@@ -1,0 +1,9 @@
+[formatter.rust]
+command = "rustfmt"
+options = ["--edition", "2018"]
+includes = ["*.rs"]
+
+[formatter.nix]
+command = "nixpkgs-fmt"
+includes = ["*.nix"]
+excludes = ["nix/sources.nix"]

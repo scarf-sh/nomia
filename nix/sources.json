@@ -22,5 +22,17 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/b3abdc9534a675da2aa7631d505a5f71ef30ecfa.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "treefmt": {
+        "branch": "master",
+        "description": "One CLI to format the code tree",
+        "homepage": "https://numtide.github.io/treefmt/",
+        "owner": "numtide",
+        "repo": "treefmt",
+        "rev": "16c2f3457e6d9bd0b30beb630d8b266b9505e394",
+        "sha256": "0shfhclqc9sr74nidi7bq7805q6j5pi6q51dpwrrxfkj82kdsmp9",
+        "type": "tarball",
+        "url": "https://github.com/numtide/treefmt/archive/16c2f3457e6d9bd0b30beb630d8b266b9505e394.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
