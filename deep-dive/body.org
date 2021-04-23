@@ -202,13 +202,13 @@ Informally, most names are of the form:
 
 #+BEGIN_SRC
 namespace-id?param1=value1&param2="value 2":name-id?param3=value3(
-  input: namespace-id-2:name-id-2.output
+  input = namespace-id-2:name-id-2.output
 )
 #+END_SRC
 
 Breaking this down in order, we have:
 
-- ~namespace-id~ is an identifier to locate the namespace the name is in. It is either an identifier string (e.g. ~foo~), in which case the location of the namespace is hard-coded or configured into the root namespace of namespaces that the name is resolved in, or it is another name with an output specified in parentheses (e.g. ~(foo:bar.namespace)~), in which case the namespace is found by resolving the name and acquiring a handle to the specified output. The ~namespace-id~ (and the separating ~:~) can be omitted, in which case the context in which the name is resolved must specify a default namespace to find names.
+- ~namespace-id~ is an identifier to locate the namespace the name is in. It is either an identifier string (e.g. ~foo~), in which case the location of the namespace is hard-coded or configured into the root namespace of namespaces that the name is resolved in, or it is another name with an output specified in square brackets (e.g. ~[foo:bar.namespace]~), in which case the namespace is found by resolving the name and acquiring a handle to the specified output. The ~namespace-id~ (and the separating ~:~) can be omitted, in which case the context in which the name is resolved must specify a default namespace to find names.
 - ~name-id~ is an identifier string whose meaning is supplied by the identified (or default) namespace
 - Parameter values are optional, providing more structured data to resolve the specific namespace or name.
 - The input specification is optional, identifying any substitutions /into/ the identified name. Each input specification can name the input being specified or operate positionally, and references a particular output of some other name.
@@ -222,7 +222,7 @@ To allow for fully arbitrary order-sensitive directed substitution graphs, inclu
 #+BEGIN_SRC
 compose
   namespace-id?param1=value1&param2="value 2":name-id?param3=value3(
-    input: $name_1.output
+    input = $name_1.output
   );
   name_1 = namespace-id-2:name-id-2
 #+END_SRC
@@ -235,14 +235,14 @@ As syntax sugar for the case where every name in the substitution except one has
 let
   name_1 = namespace-id-2:name-id-2
 in
-  namespace-id:name-id(input: $name_1.output)
+  namespace-id:name-id(input = $name_1.output)
 #+END_SRC
 
 which is equivalent to:
 #+BEGIN_SRC
 compose
   name_1 = namespace-id-2:name-id-2;
-  namespace-id:name-id(input: $name_1.output)
+  namespace-id:name-id(input = $name_1.output)
 #+END_SRC
 
 Finally, a name can reference a resolved name via a resolved name variable, of the form ~@foo~, anywhere a name would otherwise be used. In this case, when the new name is resolved, all resolved name variables must be assigned to a specific resolved name.

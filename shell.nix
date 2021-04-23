@@ -7,5 +7,5 @@ let
 in pkgs.mkShell {
   name = "nomia-dev-env";
 
-  nativeBuildInputs = [ pkgs.haskellPackages.BNFC texlive pkgs.niv ];
+  nativeBuildInputs = [ pkgs.haskellPackages.BNFC texlive pkgs.niv pkgs.cargo pkgs.rustc pkgs.flex pkgs.bison ];
 }

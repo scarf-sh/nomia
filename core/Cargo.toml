@@ -1,0 +1,10 @@
+[package]
+name = "nomia-core"
+version = "2.0.2"
+authors = ["Shea Levy <shea.levy@scarf.sh>"]
+edition = "2018"
+
+[dependencies]
+
+[build-dependencies]
+anyhow = "1.0"

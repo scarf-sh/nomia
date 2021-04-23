@@ -17,7 +17,7 @@ Bound. Declaration ::= Identifier "=" Substitution ;
 Unbound. Declaration ::= Substitution ;
 separator nonempty Declaration ";" ;
 
-Formal. SubstitutionSpec ::= Identifier ":" OutputRef ;
+Formal. SubstitutionSpec ::= Identifier "=" OutputRef ;
 Positional. SubstitutionSpec ::= OutputRef ;
 separator nonempty SubstitutionSpec "," ;
 
@@ -33,7 +33,7 @@ Qualified. AtomicName ::= NamespaceId ":" ParameterizedId ;
 Unqualified. AtomicName ::= ParameterizedId ;
 
 Builtin. NamespaceId ::= ParameterizedId ;
-Named. NamespaceId ::= "(" OutputRef ")" ;
+Named. NamespaceId ::= "[" OutputRef "]" ;
 
 UnParameterized. ParameterizedId ::= Identifier ;
 Parameterized. ParameterizedId ::= Identifier "?" [Param] ;
