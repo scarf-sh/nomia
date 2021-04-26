@@ -1,7 +1,12 @@
 #+TITLE: Nomia
-
+[[https://discord.gg/mSc4yXF2RV][https://img.shields.io/discord/832288508450308116.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2]]
 #+ATTR_HTML: :alt Nomia: A system for precise, efficient resource management across every domain and resource type.
 [[./banner.png]]
+
+* Table of Contents
+- [[#introduction][Introduction]]
+- [[#Documentation][Documentation]]
+- [[#community][Community]]
 
 * Introduction
 Nomia provides a systematic mechanism for giving names to any kind of resource, composing those names together to identify new composite resources, and acquiring access to the resources thus identified. These capabilities allow for precise, efficient resource management, all using a single unified abstraction applicable across domains. Nomia solves the problem of cache invalidation by solving the problem of naming things, and that's just for starters!
@@ -33,5 +38,13 @@ Nomia is in early active development, and we are fleshing out the documentation 
 - The [[https://github.com/scarf-sh/scarf][Scarf CLI]] is currently implemented on top of an internal prototype of basic Nomia capabilities. These will be reimplemented as standalone components (likely in Rust) and moved into this repository.
 * Community
 Nomia's community currently centers around this GitHub repository and our [[https://discord.gg/mSc4yXF2RV][Discord server]]. We hope to see you there!
+
+We host the following events on Discord. *The time for these events is easy to change based on community availability, please reach out on Discord if you'd like to come!*:
+
+- Scheduled pairing :: 9:30 AM - 11:30 AM UTC (5:30 AM - 7:30 AM ET), Wednesdays and Fridays
+- Project update :: 5:30 PM - 6:30 PM UTC (1:30 PM - 2:30 PM ET), every second Friday
+- Unscheduled pairing :: Ad hoc, announced in the #announcements channel on Discord.
+
+See the [[https://calendar.google.com/calendar/u/6?cid=Y19ydTA3ZDcwcDR0dDRhZjJhNDl0N3FzaWY2Y0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t][calendar]] for more details.
 
 [[https://static.scarf.sh/a.png?x-pxid=65d365d1-2d51-4fe9-a193-b5332849e5f6]]
