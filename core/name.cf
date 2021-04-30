@@ -6,39 +6,64 @@ comment "/*" "*/" ;
 -- TODO Should all of the uses of Identifier really be the same rules?
 token Identifier letter (letter | digit | '_' | '-' | '\'')* ;
 
-Tree. Name ::= Substitution ;
 LetIn. Name ::= "let" [Declaration] "in" Substitution ;
-Compose. Name ::= "compose" [Declaration] ;
+tree.  Name ::= Substitution ;
+define tree s = LetIn [ ] s ;
 
-Nullary. Substitution ::= NameRef ;
-Multiary. Substitution ::= NameRef "(" [SubstitutionSpec] ")" ;
+Declare.  Declaration ::= Binding Substitution ;
+separator Declaration ";" ;
 
-Bound. Declaration ::= Identifier "=" Substitution ;
-Unbound. Declaration ::= Substitution ;
-separator nonempty Declaration ";" ;
+Unbound. Binding ::= ;
+Bound.   Binding ::= Identifier "=" ;
 
-Formal. SubstitutionSpec ::= Identifier "=" OutputRef ;
-Positional. SubstitutionSpec ::= OutputRef ;
+Substitute. Substitution ::= NameRef Inputs ;
+
+Nullary.  Inputs ::= ;
+Multiary. Inputs ::= "(" [SubstitutionSpec] ")" GraphIndex ;
+
+DefaultIndex. GraphIndex ::= ;
+Located.      GraphIndex ::= "@" GraphTraversal NestedTraversal ;
+
+SingletonDefault.   GraphTraversal ::= ;
+SingletonSpecified. GraphTraversal ::= GraphOffset ;
+SnocTraversal.      GraphTraversal ::= GraphTraversal "." GraphOffset ;
+
+NamedOffset.      GraphOffset ::= Identifier ;
+PositionalOffset. GraphOffset ::= Integer ;
+
+NoNest.  NestedTraversal ::= ;
+Descend. NestedTraversal ::= "!" GraphTraversal ;
+
+Spec. SubstitutionSpec ::= FormalBinding OutputRef ;
 separator nonempty SubstitutionSpec "," ;
 
-Default. OutputRef ::= Substitution ;
-Specified. OutputRef ::= Substitution "." Identifier;
+Positional.  FormalBinding ::= ;
+BoundFormal. FormalBinding ::= Identifier "=" ;
 
-Atomic. NameRef ::= AtomicName ;
-Variable. NameRef ::= "$" Identifier ;
-Resolved. NameRef ::= "@" Identifier ;
-Nested. NameRef ::= "(" Name ")";
+Output. OutputRef ::= Substitution OutputIdentifier;
 
-Qualified. AtomicName ::= NamespaceId ":" ParameterizedId ;
-Unqualified. AtomicName ::= ParameterizedId ;
+DefaultOutput.   OutputIdentifier ::= ;
+SpecifiedOutput. OutputIdentifier ::= "." Identifier GraphIndex;
 
-Builtin. NamespaceId ::= ParameterizedId ;
-Named. NamespaceId ::= "[" OutputRef "]" ;
+AtomicRef.     NameRef ::= AtomicName ;
+Variable.      NameRef ::= "$" Identifier ;
+Resolved.      NameRef ::= "@" Identifier ;
+NestedNameRef. NameRef ::= "(" Name ")";
 
-UnParameterized. ParameterizedId ::= Identifier ;
-Parameterized. ParameterizedId ::= Identifier "?" [Param] ;
+Atomic. AtomicName ::= Qualification ParameterizedId ;
 
--- TODO Support multiple types?
+Unqualified. Qualification ::= ;
+Qualified.   Qualification ::= NamespaceId ":" ;
+
+Builtin.        NamespaceId ::= ParameterizedId ;
+NamedNamespace. NamespaceId ::= "[" OutputRef "]" ;
+
+ParamId. ParameterizedId ::= Identifier Params ;
+
+UnParameterized. Params ::= ;
+Parameterized.   Params ::= "?" [Param] ;
+
+-- TODO Support multiple types? Some kind of variables to reference inputs to the name?
 Quoted. ParamValue ::= String ;
 -- TODO We should support more robust unquoted strings, but annoying to get the lexer to behave
 Unquoted. ParamValue ::= Identifier ;

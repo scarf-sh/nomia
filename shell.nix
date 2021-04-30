@@ -13,9 +13,15 @@ let
     src = sources.treefmt;
     cargoSha256 = "0cpkw2jny3m654x6jg04ajfyhsf2mprxy5fy9s1bb0wid6y741b7";
   };
+
+  BNFC = pkgs.haskell.lib.overrideCabal pkgs.haskellPackages.BNFC (orig: {
+    patches = (orig.patches or [ ]) ++ [
+      ./nix/bnfc-nil-define.patch
+    ];
+  });
 in
 pkgs.mkShell {
   name = "nomia-dev-env";
 
-  nativeBuildInputs = [ pkgs.haskellPackages.BNFC texlive pkgs.niv pkgs.cargo pkgs.rustc pkgs.flex pkgs.bison treefmt pkgs.nixpkgs-fmt ];
+  nativeBuildInputs = [ BNFC texlive pkgs.niv pkgs.cargo pkgs.rustc pkgs.flex pkgs.bison treefmt pkgs.nixpkgs-fmt ];
 }

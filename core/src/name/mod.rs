@@ -41,24 +41,29 @@ pub trait NameParameters {
 
 /// A Nomia name
 ///
-/// In fully generic form, `Name`s consist of a non-empty sequence of
-/// node [Declarations](Declaration).
+/// In fully generic form, `Name`s consist of a (possibly empty)
+/// sequence of node [Declarations](Declaration) bound in a `let` and
+/// a terminal node [Substitution](Substitution).
 pub struct Name<P: NameParameters + ?Sized> {
-    /// The (possibly empty) initial sequence of [Declarations](Declaration).
-    pub first_declarations: P::Declarations,
-    /// The last [Declaration](Declaration) in the sequence.
-    pub last_declaration: P::DeclarationRef,
+    /// The let-bound nodes.
+    pub let_declarations: P::Declarations,
+    /// The terminal node.
+    pub terminal_substitution: Substitution<P>,
 }
 
 impl<P: NameParameters + ?Sized> fmt::Debug for Name<P>
 where
     P::Declarations: fmt::Debug,
-    P::DeclarationRef: fmt::Debug,
+    P::Identifier: fmt::Debug,
+    P::SubstitutionRef: fmt::Debug,
+    P::Parameters: fmt::Debug,
+    P::NestedName: fmt::Debug,
+    P::SubstitutionSpecs: fmt::Debug,
 {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         fmt.debug_struct("Name")
-            .field("first_declarations", &self.first_declarations)
-            .field("last_declaration", &self.last_declaration)
+            .field("let_declarations", &self.let_declarations)
+            .field("terminal_substitution", &self.terminal_substitution)
             .finish()
     }
 }
@@ -66,12 +71,16 @@ where
 impl<P: NameParameters + ?Sized> Clone for Name<P>
 where
     P::Declarations: Clone,
-    P::DeclarationRef: Clone,
+    P::Identifier: Clone,
+    P::SubstitutionRef: Clone,
+    P::Parameters: Clone,
+    P::NestedName: Clone,
+    P::SubstitutionSpecs: Clone,
 {
     fn clone(&self) -> Self {
         Self {
-            first_declarations: self.first_declarations.clone(),
-            last_declaration: self.last_declaration.clone(),
+            let_declarations: self.let_declarations.clone(),
+            terminal_substitution: self.terminal_substitution.clone(),
         }
     }
 }
@@ -79,7 +88,11 @@ where
 impl<P: NameParameters + ?Sized> Copy for Name<P>
 where
     P::Declarations: Copy,
-    P::DeclarationRef: Copy,
+    P::Identifier: Copy,
+    P::SubstitutionRef: Copy,
+    P::Parameters: Copy,
+    P::NestedName: Copy,
+    P::SubstitutionSpecs: Copy,
 {
 }
 

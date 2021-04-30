@@ -1,0 +1,24 @@
+From 6b8b9e099dcd0f12255800de06c45db971ceddcd Mon Sep 17 00:00:00 2001
+From: Shea Levy <shea.levy@scarf.sh>
+Date: Fri, 30 Apr 2021 11:37:13 -0400
+Subject: [PATCH] C: Properly implement defined rules using the empty list.
+
+Part of #363.
+---
+ source/src/BNFC/Backend/C/CFtoCAbs.hs       | 2 ++
+ testing/regression-tests/266_define/test.cf | 5 +++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/src/BNFC/Backend/C/CFtoCAbs.hs b/src/BNFC/Backend/C/CFtoCAbs.hs
+index cd5d1e3a..b731873f 100644
+--- a/src/BNFC/Backend/C/CFtoCAbs.hs
++++ b/src/BNFC/Backend/C/CFtoCAbs.hs
+@@ -126,6 +126,8 @@ prDefH tokenCats f xs e = concat [ "#define make_", f, "(", intercalate "," xs,
+     -- Token categories are just @typedef@s in C, so no constructor needed.
+     App g [e] | g `elem` tokenCats
+                 -> prExp e
++    App "[]"  [] -> "NULL"
++    App "(:)" [hd, tl] -> error "nonempty lists in defined rules not supported in C" -- How do we get the type of list at this point?
+     App g es    -> concat [ "make_", g, "(", intercalate "," (map prExp es), ")" ]
+     LitInt    i -> show i
+     LitDouble d -> show d
