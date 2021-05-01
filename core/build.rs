@@ -1,10 +1,16 @@
 use anyhow::Result;
+use bindgen;
+use cc;
+use std::env;
 use std::fs::remove_file;
+use std::path::PathBuf;
 use std::process::Command;
 
 fn main() -> Result<()> {
     // re-run if the grammar changes
     println!("cargo:rerun-if-changed=name.cf");
+    println!("cargo:rerun-if-changed=gen/Makefile");
+    println!("cargo:rerun-if-changed=gen/bnfc.h");
 
     // Generate C code from the grammar
     let status = Command::new("bnfc")
@@ -17,9 +23,29 @@ fn main() -> Result<()> {
     remove_file("gen/Skeleton.c")?;
     remove_file("gen/Skeleton.h")?;
 
-    // Build the C code for the parser
+    // Generate the C from the bison and flex source.
     let status = Command::new("make").current_dir("gen").status()?;
     assert!(status.success());
+
+    cc::Build::new()
+        .include("gen")
+        .file("gen/Absyn.c")
+        .file("gen/Buffer.c")
+        .file("gen/Lexer.c")
+        .file("gen/Parser.c")
+        .file("gen/Printer.c")
+        .compile("parser");
+
+    let bindings = bindgen::Builder::default()
+        // The input header we would like to generate
+        // bindings for.
+        .header("gen/bnfc.h")
+        // Finish the builder and generate the bindings.
+        .generate()
+        .expect("Unable to generate bindings");
+
+    let out_path = PathBuf::from(env::var("OUT_DIR")?);
+    bindings.write_to_file(out_path.join("bindings.rs"))?;
 
     Ok(())
 }

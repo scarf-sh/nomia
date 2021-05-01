@@ -8,3 +8,5 @@ edition = "2018"
 
 [build-dependencies]
 anyhow = "1.0"
+cc = "1.0"
+bindgen = "0.58"

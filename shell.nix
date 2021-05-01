@@ -24,4 +24,6 @@ pkgs.mkShell {
   name = "nomia-dev-env";
 
   nativeBuildInputs = [ BNFC texlive pkgs.niv pkgs.cargo pkgs.rustc pkgs.flex pkgs.bison treefmt pkgs.nixpkgs-fmt ];
+
+  LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib";
 }

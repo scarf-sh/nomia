@@ -1,3 +1,4 @@
 gen/*
 !gen/Makefile
+!gen/bnfc.h
 target/
