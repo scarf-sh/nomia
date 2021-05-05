@@ -9,21 +9,38 @@
 - [[#community][Community]]
 
 * Introduction
-Nomia provides a systematic mechanism for giving names to any kind of resource, composing those names together to identify new composite resources, and acquiring access to the resources thus identified. These capabilities allow for precise, efficient resource management, all using a single unified abstraction applicable across domains. Nomia solves the problem of cache invalidation by solving the problem of naming things, and that's just for starters!
+Nomia allows for the managing of procedures in a granular, specifiable, and composable way.
+With Nomia, all aspects of building, configuring, running, testing, or deploying can be specified or implied.
+Nomia accomplishes this through an interdependent tree of functions that create resources used by other functions or by the user.
 
-There are other systems that provide similar capabilities. [[https://nixos.org/][Nix]] provides mechanisms to identify packages by their exact build steps and the inputs they rely on, enabling fully reproducible package management with efficient sharing of common dependencies between builds and systems. [[https://www.unisonweb.org/][Unison]] provides mechanisms to identify immutable pieces of code by content, allowing precise code dependency management, distributed computation, and a transparent automatic compilation model. [[https://git-scm.com/][Git]] provides mechanisms to identify files, filesystem trees, and source control artifacts like commits and tags by their content, enabling distributed source control with efficient sharing and transmission of changes. Inspired by these and similar systems, Nomia starts with these notions of identifying, combining, distributing, and creating resources by name, and builds upon them by:
+Functions in Nomia are called "names" and they provide "resources". There are 3 types of names: composite, contextual, and static. Composite names are realized (built) from input resources, contextual names require input to be clarified from outside of Nomia and static names are contextual resources that are manually specified making them no longer contextual.
 
-- Allowing arbitrary kinds of resources to be identified within the system and combined. Nomia can handle packages, services, pieces of code, entire data centers, individual time-slices of CPU work—any type of resource you can work with.
-- Enabling domain-specific notions of the precision and semantics of names to coexist. Nomia names can capture identifications as precise as "the build of the Acme webserver from revision ~b7397db~ built inside a fresh docker container based on ~ubuntu@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d~" or as loose as "the latest version of the user's favorite browser, either cross-compiled or native-compiled to target ARMv8", and combine them together.
-- Having a first-class representation of relationships /between/ names; identifying refinements of resource names; and enabling efficient reuse of existing resources, resource storage mechanisms, and resource creation mechanisms. A name which specifies "the latest version of the user's favorite browser, either cross-compiled or native-compiled to target ARMv8" might, at a particular invocation, /reduce to/ "firefox 87.0 cross-compiled from amd64 linux", which we may have already built or already know how to build.
+An example of a contextual name could be something like a file descriptor, or network access, or access to host information, or anything that isn't packaged within the Nomia executable or cached by Nomia. Contextual names can be super specific such as access to a specific file or super vague such as access to the entire internet. Contextual resources can be made more focused either inside Nomia (using Names) or outside of Nomia. Contextual names are realized into resources as soon as they are needed.
+
+Composite names on the other hand, require input resources from other names. One example of a composite resource could be an ssh server with various other resource requirements, such as: 
+ - the composite resource that provides the ssh binary,
+ - the contextual resource that provides a socket listening on port 22,
+ - the contextual resource that provides the ssh config,
+ - the contextual resource that provides access to the system shell.
+Contextual resources can be either specified manually by the user to become static resources or filled-in by the Nomia hypervisor (i.e. the program that is running Nomia which implements Nomia's context API) when realizing a composite resource.
+
+In this way, names are combined into trees which can require many contextual/static inputs and produce various outputs. The tree structure can be content-addressed and transferred between computers with varying amounts of specificity. Parts of trees can be abstracted out leaving only pure sections of trees that can be used for reproducible building. Or parts trees can be left with specific contextual names needing to be specified when realizing an output resource.
+
+These capabilities allow for precise, efficient resource management, all using a single unified abstraction applicable across domains. Nomia solves the problem of cache invalidation by solving the problem of naming things, and that's just the beginning!
+
+Nomia takes heavy inspiration from other systems. Just like [[https://nixos.org/][Nix]], Nomia provides mechanisms to identify packages by their exact build steps and the inputs they rely on, enabling fully reproducible package management with efficient sharing of common dependencies between builds and systems. Similar to [[https://www.unisonweb.org/][Unison]], Nomia provides mechanisms to identify immutable pieces of code by content, allowing precise code dependency management, distributed computation, and a transparent automatic compilation model. Nomia also takes inspiration from [[https://git-scm.com/][Git]], providing mechanisms to identify files, filesystem trees, and source control artifacts like commits and tags by their content, enabling distributed source control with efficient sharing and transmission of changes.
+
+With Nomia,
+- Arbitrary kinds of resources to be identified within the system and combined. Nomia can handle packages, services, pieces of code, entire data centers, individual time-slices of CPU work—any type of resource you can work with.
+- Contextual resources allow for domain-specific notions of the inputs of names. Nomia names can capture identifications as precise as "the build of the Acme webserver from revision ~b7397db~ built inside a fresh docker container based on ~ubuntu@sha256:6e9f67fa63b0323e9a1e587fd71c561ba48a034504fb804fd26fd8800039835d~" or as loose as "the latest version of firefox nightly". This variable specificity can be expressed through Nomia's [[https://github.com/scarf-sh/nomia/releases/download/2.0.1/name-grammar.pdf][name format]].
+- Representations of relationships /between/ names (i.e. inputs), identifying refinements of resource names, and enabling efficient reuse of existing resources, resource storage mechanisms, and resource creation mechanisms. A name which specifies "the latest version of firefox compiled to the target CPU and OS", at a particular invocation, would /reduce to/ "firefox 87.0 compiled to amd64 linux", which we may have already built or already know how to build.
 
 In the Nomia-powered future, you will be able to:
-
 1. Point your editor to ~(client-projects:acme):server//src/main.cc~ and have the latest version of the Acme server source code downloaded to your machine, the ~main.cc~ file opened, and the dependencies loaded for use by your editor's code checker.
 2. Make a change and point your browser to ~nomia://(client-projects:acme):server/login~ and have the Acme server built (reusing the results of the latest CI build for unchanged files), the service and its dependencies started, and the login page for your local instance loaded into your browser.
 3. Tell your deployment tool to modify the staging environment with the replacement ~acme-server => (client-projects:acme):server~ and have the local ~(client-projects:acme):server~ automatically reduced to the more deterministic ~cmake:c++-project(input: immutable-filesystem-object?hash=9368819aaf6f619ec109e544b56ca05a21375ca671d00dbf7532e0b69aded39a)~ and the results shipped off to your staging environment with all downstream dependencies pointing to your changed service.
 
-Behind the scenes of each step, Nomia will be driving name resolution and resource acquisition.
+Behind the scenes of each step, Nomia will be driving name resolution and resource realization.
 
 # TODO the gif story should go here, maybe replacing the previous 3 step description
 
