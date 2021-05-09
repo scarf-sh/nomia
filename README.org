@@ -42,7 +42,7 @@ Nomia's community currently centers around this GitHub repository and our [[http
 We host the following events on Discord. *The time for these events is easy to change based on community availability, please reach out on Discord if you'd like to come!*:
 
 - Scheduled pairing :: 2:30 PM - 4:30 PM UTC (10:30 AM - 12:30 PM ET), Wednesdays and Fridays
-- Project update :: 5:30 PM - 6:30 PM UTC (1:30 PM - 2:30 PM ET), every second Friday
+- Project update :: 5:30 PM - 6:30 PM UTC (1:30 PM - 2:30 PM ET), last Friday of the month
 - Unscheduled pairing :: Ad hoc, announced in the #announcements channel on Discord.
 
 See the [[https://calendar.google.com/calendar/u/6?cid=Y19ydTA3ZDcwcDR0dDRhZjJhNDl0N3FzaWY2Y0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t][calendar]] for more details.
