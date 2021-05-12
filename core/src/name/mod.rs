@@ -1,7 +1,20 @@
 //! Basic AST for names.
 
-use std::fmt;
-use std::iter::IntoIterator;
+use core::fmt;
+use core::iter::IntoIterator;
+
+#[cfg(feature = "alloc")]
+use alloc::alloc::Allocator;
+#[cfg(feature = "alloc")]
+use alloc::alloc::Global;
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+#[cfg(feature = "alloc")]
+use alloc::string::String;
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use core::marker::PhantomData;
 
 /// Type parameters for the [Name](Name) AST.
 ///
@@ -523,31 +536,37 @@ where
 
 impl<P: NameParameters + ?Sized> Copy for Identifier<P> where P::Identifier: Copy {}
 
+#[cfg(feature = "alloc")]
 /// A type to carry [NameParameters](NameParameters) using [Box](Box)
 /// for references and [Vec](Vec) for sequences.
-pub enum OwnedNameParameters {}
+pub struct OwnedNameParameters<A: Allocator = Global> {
+    phantom: PhantomData<A>,
+}
 
-impl NameParameters for OwnedNameParameters {
-    type DeclarationRef = Box<Declaration<Self>>;
-    type Declarations = Vec<Self::DeclarationRef>;
+#[cfg(feature = "alloc")]
+impl<A: Allocator> NameParameters for OwnedNameParameters<A> {
+    type DeclarationRef = Box<Declaration<Self>, A>;
+    type Declarations = Vec<Self::DeclarationRef, A>;
 
-    type NestedName = Box<Name<Self>>;
+    type NestedName = Box<Name<Self>, A>;
 
-    type SubstitutionRef = Box<Substitution<Self>>;
+    type SubstitutionRef = Box<Substitution<Self>, A>;
 
-    type SubstitutionSpecs = Vec<SubstitutionSpec<Self>>;
+    type SubstitutionSpecs = Vec<SubstitutionSpec<Self>, A>;
 
+    // This should be parameterized, see https://github.com/rust-lang/rust/pull/79500
     type ParameterName = String;
     type ParameterValue = String;
-    type Parameters = Vec<Parameter<Self>>;
+    type Parameters = Vec<Parameter<Self>, A>;
 
     type Identifier = String;
 }
 
+#[cfg(feature = "alloc")]
 /// A [Name](Name) where all internal references and sequences are owned.
 ///
 /// Built on top of [Box](Box) and [Vec](Vec).
-pub type OwnedName = Name<OwnedNameParameters>;
+pub type OwnedName<A = Global> = Name<OwnedNameParameters<A>>;
 
 mod bnfc {
     #![allow(non_upper_case_globals)]

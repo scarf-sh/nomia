@@ -37,10 +37,9 @@ fn main() -> Result<()> {
         .compile("parser");
 
     let bindings = bindgen::Builder::default()
-        // The input header we would like to generate
-        // bindings for.
         .header("gen/bnfc.h")
-        // Finish the builder and generate the bindings.
+        .use_core()
+        .ctypes_prefix("libc")
         .generate()
         .expect("Unable to generate bindings");
 

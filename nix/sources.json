@@ -23,6 +23,18 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/b3abdc9534a675da2aa7631d505a5f71ef30ecfa.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "rust-overlay": {
+        "branch": "master",
+        "description": "Pure and reproducible nix overlay for binary distributed rust toolchains",
+        "homepage": "",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "4f2051c76032e86338219f477e5ac9e522dd362a",
+        "sha256": "0aljg3ydmf40hypcslfnxlg82zjpzr0ffbisx8b1f9h0k2jai7j5",
+        "type": "tarball",
+        "url": "https://github.com/oxalica/rust-overlay/archive/4f2051c76032e86338219f477e5ac9e522dd362a.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "treefmt": {
         "branch": "master",
         "description": "One CLI to format the code tree",

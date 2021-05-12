@@ -1,7 +1,9 @@
 let
   sources = import ./nix/sources.nix { };
 
-  pkgs = import sources.nixpkgs { };
+  pkgs = import sources.nixpkgs {
+    overlays = [ (import sources.rust-overlay) ];
+  };
 
   texlive = pkgs.texlive.combine { inherit (pkgs.texlive) scheme-small ucs; };
 
@@ -19,11 +21,13 @@ let
       ./nix/bnfc-nil-define.patch
     ];
   });
+
+  rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
 in
 pkgs.mkShell {
   name = "nomia-dev-env";
 
-  nativeBuildInputs = [ BNFC texlive pkgs.niv pkgs.cargo pkgs.rustc pkgs.flex pkgs.bison treefmt pkgs.nixpkgs-fmt ];
+  nativeBuildInputs = [ BNFC texlive pkgs.niv pkgs.cargo rust pkgs.flex pkgs.bison treefmt pkgs.nixpkgs-fmt ];
 
   LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib";
 }
