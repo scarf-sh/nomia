@@ -4,9 +4,16 @@
 [[./banner.png]]
 
 * Table of Contents
+- [[#what-is-nomia][What is Nomia?]]
 - [[#introduction][Introduction]]
 - [[#Documentation][Documentation]]
 - [[#community][Community]]
+
+* What is Nomia?
+
+Nomia is inspired by tools such as Nix, Unison, and Git. They all provide distinct, immutable names for resources like packages, code, and files. Nomia wants to bring them together (and more!) to make reproducing whole environments—from your editor to code to data to complete running services—as easy as ~git switch~.
+
+Nomia's a growing project and we want you to help shape it. [[https://discord.gg/mSc4yXF2RV][Join us on our Discord server]] or [[#community][attend a pairing session]].
 
 * Introduction
 Nomia provides a systematic mechanism for giving names to any kind of resource, composing those names together to identify new composite resources, and acquiring access to the resources thus identified. These capabilities allow for precise, efficient resource management, all using a single unified abstraction applicable across domains. Nomia solves the problem of cache invalidation by solving the problem of naming things, and that's just for starters!
