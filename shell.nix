@@ -16,11 +16,7 @@ let
     cargoSha256 = "0cpkw2jny3m654x6jg04ajfyhsf2mprxy5fy9s1bb0wid6y741b7";
   };
 
-  BNFC = pkgs.haskell.lib.overrideCabal pkgs.haskellPackages.BNFC (orig: {
-    patches = (orig.patches or [ ]) ++ [
-      ./nix/bnfc-nil-define.patch
-    ];
-  });
+  BNFC = pkgs.haskellPackages.callCabal2nix "BNFC" (sources.bnfc + "/source") { };
 
   rust = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.default);
 in

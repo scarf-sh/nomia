@@ -1,4 +1,16 @@
 {
+    "bnfc": {
+        "branch": "master",
+        "description": "BNF Converter",
+        "homepage": "http://bnfc.digitalgrammars.com/",
+        "owner": "BNFC",
+        "repo": "bnfc",
+        "rev": "3bb050a426c6fbdc9d89b4c8217a648701681b6e",
+        "sha256": "16b00jp56i3bkhzjh0ljry23iirkgklclf0wyr3ids90vqkkisx1",
+        "type": "tarball",
+        "url": "https://github.com/BNFC/bnfc/archive/3bb050a426c6fbdc9d89b4c8217a648701681b6e.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "niv": {
         "branch": "master",
         "description": "Easy dependency management for Nix projects",

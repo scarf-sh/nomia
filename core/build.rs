@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() -> Result<()> {
+    // TODO only do this if we're --features=alloc
     // re-run if the grammar changes
     println!("cargo:rerun-if-changed=name.cf");
     println!("cargo:rerun-if-changed=gen/Makefile");

@@ -5,10 +5,11 @@ authors = ["Shea Levy <shea.levy@scarf.sh>"]
 edition = "2018"
 
 [features]
-alloc = []
+alloc = ["libc", "cstr_core"]
 
 [dependencies]
-libc = "0.2"
+libc = { version = "0.2", optional = true }
+cstr_core = { version = "0.2", optional = true }
 
 [build-dependencies]
 anyhow = "1.0"

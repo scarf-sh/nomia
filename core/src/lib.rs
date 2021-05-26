@@ -1,5 +1,7 @@
 #![no_std]
-#![feature(allocator_api)]
+#![cfg_attr(feature = "alloc", feature(allocator_api))]
+#![cfg_attr(feature = "alloc", feature(try_reserve))]
+#![cfg_attr(feature = "alloc", feature(arbitrary_self_types))]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
